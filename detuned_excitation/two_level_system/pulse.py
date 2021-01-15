@@ -37,6 +37,9 @@ class Pulse:
         return lambda t: self.e0 * np.exp(-0.5 * ((t - self.t0) / self.tau) ** 2) / (np.sqrt(2 * np.pi) * self.tau)
 
     def set_frequency(self, f):
+        """
+        use a lambda function f taking a time t to set the time dependent frequency.
+        """
         self.freq = f
 
     def get_frequency(self, t):
@@ -83,6 +86,31 @@ class Pulse:
         plt.plot(t, y2, 'r.')
         # plt.plot(t,y3,'y.')
         plt.show()
+
+
+class RectanglePulse(Pulse):
+    """
+    Pulse with rectangular pulse shape, with amplitude area/tau from -tau/2 to tau/2, else 0.
+    frequency is constant or chirped (though this is not really needed).
+    but can be set using set_frequency and a lambda function.
+    """
+
+    def get_envelope_f(self):
+        return lambda t: self.e0/self.tau if np.abs(t-self.t0) < self.tau/2 else 0
+
+    def get_envelope(self, t):
+        return self.get_envelope_f()(t)
+
+    def plot(self, t0, t1, n):
+        t = np.linspace(t0, t1, n)
+        y = [self.get_total(i) for i in t]
+        y2 = [self.get_envelope(i) for i in t]
+        # y3 = np.cos(self.get_carrier()(t) * (t - self.t0))
+        plt.plot(t, y, 'b.')
+        plt.plot(t, y2, 'r.')
+        # plt.plot(t,y3,'y.')
+        plt.show()
+
 
 class ChirpedPulse(Pulse):
     def __init__(self, tau_0, e_start, alpha=0, t0=0, e0=1*np.pi):
