@@ -56,6 +56,15 @@ def two_level_chirp_a(t0=-4*400, dt=20, t_end=4*400, f_start=0, p_start=0, energ
     return f, p, states
 
 
+def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0):
+    n_steps = int(abs(t_end-t0)/dt)+1
+    f, p, states = tls.tls_twopulse(t_0=t0, dt=dt, n_steps=n_steps, in_state=f_start,
+                                in_polar=p_start, tau1=tau1, tau2=tau2, e_energy1=energy1,
+                                e_energy2=energy2, a_chirp1=chirp1, a_chirp2=chirp2,
+                                e01=area1, e02=area2, delta_e=0, t02=t02)
+    return f, p, states
+
+
 def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
     """
     runge kutta 4 to solve differential equations.
@@ -83,9 +92,8 @@ def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
 
 
 def bloch_eq(t, x, pulse, delta_e):
-    # eq. in frame rotating with system frequency
-    # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
-    e_f = pulse.get_envelope(t)  # pulse.get_total(t) * np.exp(1j*delta_e/HBAR*t)
+    # eq. in frame rotating with laser frequency
+    e_f = pulse.get_envelope(t)
     delta = pulse.get_frequency(t) - delta_e/HBAR
     f = x[0]
     p = x[1]
@@ -93,3 +101,15 @@ def bloch_eq(t, x, pulse, delta_e):
     _f = np.imag(np.conj(e_f)*p)
     _p = 1j*delta*p + 0.5j*e_f*(1-2*f)
     return np.array([_f, _p], dtype=complex)
+
+
+def bloch_eq_constrf(t, x, pulse_, _):
+    # eq. in frame rotating with system frequency
+    # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
+    e_f = pulse_.get_total(t)
+    f = x[0]
+    p = x[1]
+
+    _f = np.imag( np.conj(e_f) * p )
+    _p = 0.5j * e_f * ( 1 - 2 * f ) 
+    return np.array( [_f, _p], dtype=complex )

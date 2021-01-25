@@ -62,6 +62,9 @@ class Pulse:
         :return: Carrier phase(t)/t, time dependent
         """
         return self.w_start + 0.5*self.w_gain * (t - self.t0)
+
+    def get_full_phase(self,t):
+        return self.w_start * (t - self.t0) + 0.5*self.w_gain * ((t - self.t0) **2)
     
     def get_energies(self):
         """
@@ -75,15 +78,16 @@ class Pulse:
         return energy_range
 
     def get_total(self, t):
-        return self.get_envelope(t) * np.exp(-1j * self.get_phase(t) * (t - self.t0))
+        return self.get_envelope(t) * np.exp(-1j * self.get_full_phase(t))
 
     def plot(self, t0, t1, n):
         t = np.linspace(t0, t1, n)
         y = self.get_total(t)
         y2 = self.get_envelope(t)
         # y3 = np.cos(self.get_carrier()(t) * (t - self.t0))
-        plt.plot(t, y, 'b.')
-        plt.plot(t, y2, 'r.')
+        plt.plot(t, y.real, 'r-')
+        plt.plot(t, y.imag, 'b-')
+        plt.plot(t, y2, 'g-')
         # plt.plot(t,y3,'y.')
         plt.show()
 
@@ -132,3 +136,17 @@ class ChirpedPulse(Pulse):
         returns ratio of pulse area chirped/unchirped: tau / sqrt(tau * tau_0)
         """
         return np.sqrt(self.tau / self.tau_0)
+
+
+class MultiPulse:
+    def __init__(self, pulse1, pulse2):
+        self.pulse1 = pulse1
+        self.pulse2 = pulse2
+
+    def get_total(self, t):
+        """
+        returns e0_1(t)*exp(-i*phi1(t)) + e0_2(t)*exp(-i*phi2(t))
+        """
+        _p1 = self.pulse1.get_total(t)  # get_envelope(t) * np.exp(-1j*self.pulse1.get_full_phase(t))
+        _p2 = self.pulse2.get_total(t)  # get_envelope(t) * np.exp(-1j*self.pulse2.get_full_phase(t))
+        return _p1 + _p2
