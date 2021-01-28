@@ -42,13 +42,18 @@ def test_twopulse():
     tau = 5000
     t0 = 4*tau
     dt = 10
+    area1 = 2*np.pi
     t = np.arange(-t0,t0,dt)
     
-    _,_,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=8*np.pi, tau1=tau, chirp1=0, energy1=-5)
+    _,_,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, tau1=tau, chirp1=0, energy1=-5)
     plt.plot(t,states)
+    plt.title("5ps, 2pi, -5meV")
+    plt.xlabel("t in fs")
+    plt.ylabel("Besetzung")
+    plt.tight_layout()
     plt.show()
 
-test_twopulse()
+# test_twopulse()
 
 def test_python():
     p = pulse.Pulse(tau=400, e_start=0.5, w_gain=0*60/(1000**2), e0=7*np.pi)
@@ -58,7 +63,7 @@ def test_python():
     plt.plot(t,x2[:,0].real)
     plt.show()
 
-#test_python()
+# test_python()
 
 
 def test_rabifreq():
@@ -95,34 +100,44 @@ def test_rabifreq():
     plt.show()
 
 # test_chirp_a()
-#test_chirp()
-#test_python()
-#test_rabifreq()
+# test_chirp()
+# test_python()
+# test_rabifreq()
 
-def test_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0):
-    # tau = 10000
+def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0):
+    """
+    excites a two level system using a frequency modulated laser pulse.
+    tau: width of the gaussian shape laser pulse in femto seconds
+    dt: timestep for rk4 integration in fs
+    area: pulse area of pulse
+    detuning: base detuning of the laser field in meV
+    small_detuning: amplitude of the frequency modulation in meV
+    phase: adds a phase to the frequency modulation. it seems like this is not relevant though.
+    """
+    # choose a wide enough time window
     t0 = -4*tau
     t1 = 4*tau
-    #dt = 4
     s = int((t1 - t0) / dt)
     t = np.linspace(t0, t1, s + 1)
-    # area = 7*np.pi
+    # this just sets the envelope of the laser. setting the frequency happens below.
     p = pulse.Pulse(tau=tau, e_start=0, w_gain=0, e0=area)
     # we now want to set the frequency with something oscillating like the rabi-freq of the system
-    # so we first need the time dependent rabi freq
+    # so we first need the time dependent rabi frequency.
     # notice that we set the frequency (!) i.e. the laser energy, not directly the oscillating
     # part of the laser, exp(i*phi(t)). to get phi(t), we would have to
     # integrate the frequency over time.
     # using a rotating frame with the light frequency, we only need the frequencies.
     # this changes if we want a different rotating frame, for example if we want to
     # consider two overlapping pulses.
-    detuning = detuning/HBAR
-    small_det = small_detuning/HBAR
-    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning**2)
-    freq = lambda t: detuning + small_det*np.sin(rf(t)*t+phase)
+    detuning_f = detuning/HBAR
+    small_det_f = small_detuning/HBAR
+    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_f**2)
+    freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t+phase)
     # plt.plot(t,freq(t)*HBAR)
     # plt.show() 
     # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
+
+    # this one finally sets the frequency(t) using a lambda function
     p.set_frequency(freq)
     x0 = np.array([0,0],dtype=complex)
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
@@ -131,42 +146,38 @@ def test_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=
     #ax2.plot(t,freq(t)*HBAR, 'b-')
     ax.plot(t,x[:,0].real, 'r-')
     ax.set_ylim(0,1)
+    ax.set_xlabel("t in fs")
+    ax.set_ylabel("Besetzung")
+    plt.title("{:.0f}fs, {:.0f}pi, {}meV, {}meV".format(tau,area/np.pi,detuning, small_detuning))
     #ax2.set_ylim(-10,-20)
     plt.show()
     return t, x, p
 
-#test_excitation()
-#test_excitation(tau=6000, area=2*np.pi, detuning=-0.1, small_detuning=0)
-#test_excitation(tau=6000, area=8*np.pi, detuning=-8, small_detuning=2)
-#test_excitation(tau=9000, area=10*np.pi, detuning=-10, small_detuning=2)
-#test_excitation(tau=9000, area=7*np.pi, detuning=7, small_detuning=2)
-#test_excitation(tau=9000, area=4*np.pi, detuning=3, small_detuning=1.5)
+# fm_pulsed_excitation()
+# fm_pulsed_excitation(tau=6000, area=2*np.pi, detuning=-0.1, small_detuning=0)
+# fm_pulsed_excitation(tau=6000, area=8*np.pi, detuning=-8, small_detuning=2)
+# fm_pulsed_excitation(tau=9000, area=10*np.pi, detuning=-10, small_detuning=2)
+# fm_pulsed_excitation(tau=9000, area=7*np.pi, detuning=7, small_detuning=2)
+# fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=3, small_detuning=1.5)
 
 def detuned_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0):
-    # tau = 10000
+    """
+    excites a two level system using a frequency modulalted rectangle shape pulse.
+    see fm_pulsed_excitation() above for more information.  
+    """
     t0 = -2*tau
     t1 = 2*tau
-    #dt = 4
     s = int((t1 - t0) / dt)
     t = np.linspace(t0, t1, s + 1)
-    # area = 7*np.pi
     p = pulse.RectanglePulse(tau=tau, e_start=0, w_gain=0, e0=area)
-    # p.plot(t0,t1,300)
-    # we now want to set the frequency with something oscillating like the rabi-freq of the system
-    # so we first need the time dependent rabi freq
-    # notice that we set the frequency (!) i.e. the laser energy, not directly the oscillating
-    # part of the laser, exp(-i*phi(t)). to get phi(t), we would have to
-    # integrate the frequency over time.
-    # using a rotating frame with the light frequency, we only need the frequencies.
-    # this changes if we want a different rotating frame, for example if we want to
-    # consider two overlapping pulses.
+   
     detuning = detuning/HBAR  # in rad/fs
     small_det = small_detuning/HBAR  # rad/fs
     rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning**2)
     freq = lambda t: detuning + small_det*np.sin(rf(0)*t+phase)
-    print("max. rabifreq: {:.4f} rad/fs or {:.4f} THz (1/ps)".format(rf(0),1000*rf(0)/(2*np.pi)))
-    plt.plot(t,np.array([freq(i) for i in t])*HBAR)
-    plt.show() 
+    # print("max. rabifreq: {:.4f} rad/fs or {:.4f} THz (1/ps)".format(rf(0),1000*rf(0)/(2*np.pi)))
+    # plt.plot(t,np.array([freq(i) for i in t])*HBAR)
+    # plt.show() 
     p.set_frequency(freq)
     x0 = np.array([0,0],dtype=complex)
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
@@ -186,3 +197,14 @@ def detuned_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuni
 # high area leads to more full oscillations of the occupation
 # high detuning leads to higher frequency of the small oscillations
 # high small_detuning leads to greater leaps per small oscillation (?)
+
+
+def freq_image():
+    t = np.linspace(-10,10,200)
+    plt.plot(-10 + 3 * np.sin(3*t))
+    plt.xlabel("t")
+    plt.ylabel("Energy, meV")
+    plt.ylim([-15,0])
+    plt.show()
+
+#freq_image()

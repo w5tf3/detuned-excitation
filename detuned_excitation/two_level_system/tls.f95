@@ -189,7 +189,7 @@ subroutine tls_chirp_a(t_0, dt, n_steps, in_state, in_polar, out_state, out_pola
     out_polar=p;
 end subroutine tls_chirp_a
 
-subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, tau1,&
+subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, tau1,&
     tau2, e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, delta_e, t02)
 ! ===============================
 ! solves six level system for one pulse with given parameters
@@ -205,6 +205,7 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
     Real*8,intent(out):: out_state
     Complex*16,intent(out):: out_polar
     Real*8,intent(out):: out_states(n_steps)
+    Complex*16,intent(out):: out_polars(n_steps)
     Real*8 :: HBAR
     Real*8 :: t, pi, w_start1, w_start2, phidot
     Real*8 :: g, delta, k1r, k2r, k3r, k4r
@@ -223,6 +224,7 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
     !n_steps = int(abs(t_end - t_0)/dt) - 1
 
     out_states(1)=g;
+    out_polars(1)=p;
     phidot = delta_e/HBAR
     delta = phidot - delta_e/HBAR
     do i = 0, n_steps - 2
@@ -253,6 +255,7 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
         g=g + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
         p=p + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
         out_states(i+2)=g;
+        out_polars(i+2)=p;
     end do
     out_state=g;
     out_polar=p;
