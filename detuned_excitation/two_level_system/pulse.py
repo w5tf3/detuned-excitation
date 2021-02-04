@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-HBAR = 6.582119514e-2  # meV fs
+HBAR = 6.582119514e2  # meV fs
 
 
 class Pulse:
