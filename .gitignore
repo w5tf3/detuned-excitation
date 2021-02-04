@@ -130,3 +130,6 @@ dmypy.json
 
 # pictures
 pics/
+
+# data file
+data.txt
