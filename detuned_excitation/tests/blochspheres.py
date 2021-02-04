@@ -1,4 +1,4 @@
-from detuned_excitation.tests.twolevelsystem import test_excitation
+from detuned_excitation.tests.twolevelsystem import fm_pulsed_excitation
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
@@ -6,7 +6,7 @@ import numpy as np
 import os
 import tqdm
 
-t, x1, p1 = test_excitation(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
+t, x1, p1 = fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
 plt.plot(t,x1[:,0].real)
 plt.show()
 
@@ -42,6 +42,12 @@ rot_y /= norm
 rot_z /= norm 
 
 ax.plot(bloch_x, bloch_y, bloch_z)
+
+# write data to file
+with open("data.txt", 'w') as f:
+    print("writing file")
+    for i in range(len(t)):
+        f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(x1[i,0]), np.real(x1[i,1]), np.imag(x1[i,1])))
 # rotation axis vector
 # ax.quiver(0,0,0,rot_x[0],rot_y[0],rot_z[0])
 
@@ -50,29 +56,31 @@ ax.plot(bloch_x, bloch_y, bloch_z)
 #     ax.plot(bloch_x[i:i+2], bloch_y[i:i+2], bloch_z[i:i+2],color=plt.cm.coolwarm(0.5*bloch_z[i]+0.5))
 
 plt.show()
-dir = os.path.dirname(__file__)
-print(dir)
-j = 0
-# for i in tqdm.trange(1,len(t)-100,100):
-#     plt.close(fig)
-#     fig = plt.figure()
-#     ax = fig.gca(projection='3d')
-#     ax.set_aspect("auto")
 
-#     # draw sphere
-#     u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
-#     x = 0.98*np.cos(u)*np.sin(v)
-#     y = 0.98*np.sin(u)*np.sin(v)
-#     z = 0.98*np.cos(v)
-#     ax.plot_wireframe(x, y, z, color="lightgray", alpha=0.6)
 
-#     ax.set_xlabel("2Re(p)")
-#     ax.set_ylabel("-2Im(p)")
-#     ax.set_zlabel("2f-1")
+def video_pics():
+    dir = os.path.dirname(__file__)
+    print(dir)
+    j = 0
+    for i in tqdm.trange(1,len(t)-100,100):
+        plt.close(fig)
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        ax.set_aspect("auto")
 
-#     j += 1
-#     ax.plot(bloch_x[:i], bloch_y[:i], bloch_z[:i], color='tab:blue')
-#     ax.plot(bloch_x[i:i+50], bloch_y[i:i+50], bloch_z[i:i+50], color='tab:red')
-#     ax.quiver(0 ,0 ,0, rot_x[i+50], rot_y[i+50], rot_z[i+50], color='tab:orange')
-#     plt.savefig(dir+"/pics/image_{}.png".format(j))
-    
+        # draw sphere
+        u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
+        x = 0.98*np.cos(u)*np.sin(v)
+        y = 0.98*np.sin(u)*np.sin(v)
+        z = 0.98*np.cos(v)
+        ax.plot_wireframe(x, y, z, color="lightgray", alpha=0.6)
+
+        ax.set_xlabel("2Re(p)")
+        ax.set_ylabel("-2Im(p)")
+        ax.set_zlabel("2f-1")
+
+        j += 1
+        ax.plot(bloch_x[:i], bloch_y[:i], bloch_z[:i], color='tab:blue')
+        ax.plot(bloch_x[i:i+50], bloch_y[i:i+50], bloch_z[i:i+50], color='tab:red')
+        ax.quiver(0 ,0 ,0, rot_x[i+50], rot_y[i+50], rot_z[i+50], color='tab:orange')
+        plt.savefig(dir+"/pics/image_{}.png".format(j))

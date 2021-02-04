@@ -56,7 +56,7 @@ def test_twopulse():
 # test_twopulse()
 
 def test_python():
-    p = pulse.Pulse(tau=400, e_start=0.5, w_gain=0*60/(1000**2), e0=7*np.pi)
+    p = pulse.Pulse(tau=400, e_start=0, w_gain=60/(1000**2), e0=7*np.pi)
     print(p.get_energies())
     x0 = np.array([0,0],dtype=complex)
     t, x2 = tls_commons.runge_kutta(-4*400, x0, 4*400, 1, tls_commons.bloch_eq, p, 0)
@@ -104,7 +104,7 @@ def test_rabifreq():
 # test_python()
 # test_rabifreq()
 
-def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0):
+def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True):
     """
     excites a two level system using a frequency modulated laser pulse.
     tau: width of the gaussian shape laser pulse in femto seconds
@@ -133,6 +133,8 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
     small_det_f = small_detuning/HBAR
     rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_f**2)
     freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t+phase)
+    if use_t_zero == False:
+        freq = lambda t: detuning_f + small_det_f*np.sin(rf(t)*t+phase)
     # plt.plot(t,freq(t)*HBAR)
     # plt.show() 
     # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above

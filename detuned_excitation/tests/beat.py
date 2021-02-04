@@ -30,22 +30,24 @@ def beat():
 
 #   beat()
 
-def test_beat(tau=10000, dt=4, area=7*np.pi, detuning=-3, w_gain=0):
+def test_beat(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0):
     """
-    somehow the python version does not work yet
+    python version works too, but is slower than fortran
     """
+    # take a time window which fits both pulses, even if one is centered around t != 0
+    tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
     t0 = -4*tau
     t1 = 4*tau
     s = int((t1 - t0) / dt)
     t = np.linspace(t0, t1, s + 1)
     _t0=0
-    p1 = pulse.Pulse(tau=tau, e_start=detuning, w_gain=w_gain, e0=area, t0=_t0)
-    p1.plot(t0,t1, 200)
-    
+    p1 = pulse.Pulse(tau=tau1, e_start=detuning, w_gain=0, e0=area1, t0=0)
     rf = lambda t: np.sqrt((p1.get_envelope_f()(t))**2 + (detuning/HBAR)**2)
-    rf_max = rf(_t0)
-    energy_pulse2 = detuning - 2 * HBAR*rf_max
-    p2 = pulse.Pulse(tau=tau, e_start=energy_pulse2, w_gain=0, e0=0*area, t0=0)
+    rf_max = rf(t=0)  # max of rabifreq
+    p1.plot(t0,t1, 200)
+
+    energy_pulse2 = detuning - HBAR*rf_max
+    p2 = pulse.Pulse(tau=tau2, e_start=energy_pulse2, w_gain=0, e0=area2, t0=t02)
 
     print("energy p1:  {:.4f} mev".format(p1.e_start))
     print("rf_max: {:.4f}".format(rf_max))
@@ -58,13 +60,13 @@ def test_beat(tau=10000, dt=4, area=7*np.pi, detuning=-3, w_gain=0):
     fig, ax = plt.subplots()
     ax2 = ax.twinx()
     #ax2.plot(t,freq(t)*HBAR, 'b-')
-    ax.plot(t,x[:,1].real, 'r-')
+    ax.plot(t,x[:,0].real)
     ax.set_ylim(-0.1,1.1)
     #ax2.set_ylim(-10,-20)
     plt.show()
     return t, x
 
-# test_beat(tau=400, detuning=0, w_gain=60/(1000**2))
+# test_beat(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
 
 def test_twopulse(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1):
     """
