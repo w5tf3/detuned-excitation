@@ -55,13 +55,17 @@ def test_twopulse():
 
 # test_twopulse()
 
-def test_python():
-    p = pulse.Pulse(tau=400, e_start=0, w_gain=60/(1000**2), e0=7*np.pi)
+def test_python(tau=400, e_start=0, w_gain=60/(1000**2), e0=7*np.pi):
+    """
+    chirped pulse with python implementation
+    """
+    p = pulse.Pulse(tau=tau, e_start=e_start, w_gain=w_gain, e0=e0)
     print(p.get_energies())
     x0 = np.array([0,0],dtype=complex)
-    t, x2 = tls_commons.runge_kutta(-4*400, x0, 4*400, 1, tls_commons.bloch_eq, p, 0)
-    plt.plot(t,x2[:,0].real)
-    plt.show()
+    t, x2 = tls_commons.runge_kutta(-4*tau, x0, 4*tau, 1, tls_commons.bloch_eq, p, 0)
+    # plt.plot(t,x2[:,0].real)
+    # plt.show()
+    return t, x2
 
 # test_python()
 
@@ -93,7 +97,6 @@ def test_rabifreq():
     # because the resulting frequency for some time t_ has to read w_0 + 0.5 * a * t
     for i in range(len(t)-1):
         t_ = t[i]
-        
         f_, p_ = tls_commons.two_level(t_,dt_small,t_+dt,f_,p_,energies[i],area,tau)
         f[i+1] = f_
     plt.plot(t,f)
@@ -104,7 +107,7 @@ def test_rabifreq():
 # test_python()
 # test_rabifreq()
 
-def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True):
+def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True, plot=False):
     """
     excites a two level system using a frequency modulated laser pulse.
     tau: width of the gaussian shape laser pulse in femto seconds
@@ -113,6 +116,7 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
     detuning: base detuning of the laser field in meV
     small_detuning: amplitude of the frequency modulation in meV
     phase: adds a phase to the frequency modulation. it seems like this is not relevant though.
+    returns: time, array x containing electron occupation (x[:,0]) and polarization (x[:,1]), a pulse object  
     """
     # choose a wide enough time window
     t0 = -4*tau
@@ -135,24 +139,27 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
     freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t+phase)
     if use_t_zero == False:
         freq = lambda t: detuning_f + small_det_f*np.sin(rf(t)*t+phase)
-    # plt.plot(t,freq(t)*HBAR)
-    # plt.show() 
+    
     # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
 
     # this one finally sets the frequency(t) using a lambda function
     p.set_frequency(freq)
     x0 = np.array([0,0],dtype=complex)
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
-    #ax2.plot(t,freq(t)*HBAR, 'b-')
-    ax.plot(t,x[:,0].real, 'r-')
-    ax.set_ylim(0,1)
-    ax.set_xlabel("t in fs")
-    ax.set_ylabel("Besetzung")
-    plt.title("{:.0f}fs, {:.0f}pi, {}meV, {}meV".format(tau,area/np.pi,detuning, small_detuning))
-    #ax2.set_ylim(-10,-20)
-    plt.show()
+    if plot:
+        # plt.plot(t,freq(t)*HBAR)
+        # plt.show() 
+        print("rabifreq(t=0)={:.4f} 1/fs".format(rf(0)))
+        fig, ax = plt.subplots()
+        ax2 = ax.twinx()
+        # ax2.plot(t,freq(t)*HBAR, 'b-')
+        ax.plot(t,x[:,0].real, 'r-')
+        ax.set_ylim(-0.05,1.05)
+        ax.set_xlabel("t in fs")
+        ax.set_ylabel("Besetzung")
+        plt.title("{:.0f}fs, {:.0f}pi, {}meV, {}meV".format(tau,area/np.pi,detuning, small_detuning))
+        # ax2.set_ylim(-10,-20)
+        plt.show()
     return t, x, p
 
 # fm_pulsed_excitation()
@@ -202,11 +209,11 @@ def detuned_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuni
 
 
 def freq_image():
-    t = np.linspace(-10,10,200)
-    plt.plot(-10 + 3 * np.sin(3*t))
-    plt.xlabel("t")
-    plt.ylabel("Energy, meV")
+    t = np.linspace(-1000,1000,200)
+    plt.plot(t, -10 + 3 * np.sin(0.0152*t))
+    plt.xlabel("t in fs")
+    plt.ylabel("Detuning, meV")
     plt.ylim([-15,0])
     plt.show()
 
-#freq_image()
+# freq_image()

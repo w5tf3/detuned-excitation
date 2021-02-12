@@ -44,10 +44,11 @@ rot_z /= norm
 ax.plot(bloch_x, bloch_y, bloch_z)
 
 # write data to file
-with open("data.txt", 'w') as f:
-    print("writing file")
-    for i in range(len(t)):
-        f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(x1[i,0]), np.real(x1[i,1]), np.imag(x1[i,1])))
+def to_file(filename="data.txt"):
+    with open(filename, 'w') as f:
+        print("writing file")
+        for i in range(len(t)):
+            f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(x1[i,0]), np.real(x1[i,1]), np.imag(x1[i,1])))
 # rotation axis vector
 # ax.quiver(0,0,0,rot_x[0],rot_y[0],rot_z[0])
 

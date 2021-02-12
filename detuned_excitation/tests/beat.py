@@ -91,7 +91,7 @@ def test_twopulse(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, de
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
     f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02)
-    return f, states, t, polars
+    return f, states, t, polars, energy_pulse2
 
 def test_stability_pulse1(dur1, ar1, tau2, area2, detuning=-5, t02=0, dt=1):
     """
@@ -103,7 +103,7 @@ def test_stability_pulse1(dur1, ar1, tau2, area2, detuning=-5, t02=0, dt=1):
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_ = test_twopulse(t02=t02, dt=dt, tau1=x_ax[j], tau2=tau2, area1=y_ax[i], area2=area2)
+           endvals[i,j],_,_,_,_ = test_twopulse(t02=t02, dt=dt, tau1=x_ax[j], tau2=tau2, area1=y_ax[i], area2=area2)
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, tau1:{:.4f}, area1:{:.4f}".format(ind,x_ax[ind[1]],y_ax[ind[0]]/np.pi))
@@ -125,7 +125,7 @@ def test_stability_pulse2(dur2, ar2, tau1, area1, detuning=-5, t02=0, dt=1):
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_ = test_twopulse(t02=t02, dt=dt, tau2=x_ax[j], tau1=tau1, area2=y_ax[i], area1=area1)
+           endvals[i,j],_,_,_,_ = test_twopulse(t02=t02, dt=dt, tau2=x_ax[j], tau1=tau1, area2=y_ax[i], area1=area1)
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, tau2:{:.4f}, area2:{:.4f}".format(ind,x_ax[ind[1]],y_ax[ind[0]]/np.pi))
@@ -140,7 +140,7 @@ def test_stability_pulse2(dur2, ar2, tau1, area1, detuning=-5, t02=0, dt=1):
 def test_stability_t0(t0_arr, dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi):
     endvals = np.empty([len(t0_arr)])
     for i in tqdm.trange(len(endvals)):
-        endvals[i],_,_,_ = test_twopulse(t02=t0_arr[i], dt=dt, tau2=tau2, tau1=tau1, area2=area2, area1=area1)
+        endvals[i],_,_,_,_ = test_twopulse(t02=t0_arr[i], dt=dt, tau2=tau2, tau1=tau1, area2=area2, area1=area1)
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, t0:{:.4f} fs".format(ind,t0_arr[ind]))
@@ -160,7 +160,7 @@ def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5, t02=0, dt=1):
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_ = test_twopulse(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=x_ax[j])
+           endvals[i,j],_,_,_,_ = test_twopulse(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=x_ax[j])
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, area1:{:.4f}, area2:{:.4f}".format(ind,x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi))
