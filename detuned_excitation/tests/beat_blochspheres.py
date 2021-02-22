@@ -1,4 +1,4 @@
-from beat import test_twopulse
+from detuned_excitation.amplitude_modulation.am import am_twopulse_excitation, test_beat
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
@@ -6,7 +6,12 @@ import numpy as np
 import os
 import tqdm
 
-f,s,t,p = test_twopulse(dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1812)
+f,s,t,p,_ = am_twopulse_excitation(dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1812)
+t2, x2 = test_beat(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
+s = x2[:,0].real
+p = x2[:,1]
+t=t2
+
 plt.plot(t,s)
 # plt.plot(t,np.real(p), 'r-')
 plt.ylim([-0.1,1.1])
@@ -33,10 +38,10 @@ bloch_z = 2*s - 1
 
 ax.plot(bloch_x, bloch_y, bloch_z)
 
-with open("data.txt", 'w') as f:
-    print("writing file")
-    for i in range(len(t)):
-        f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(s[i]), np.real(p[i]), np.imag(p[i])))
+# with open("data.txt", 'w') as f:
+#     print("writing file")
+#     for i in range(len(t)):
+#         f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(s[i]), np.real(p[i]), np.imag(p[i])))
 
 
 # for i in range(len(bloch_z)-1):
