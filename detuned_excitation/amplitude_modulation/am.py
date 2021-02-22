@@ -51,6 +51,8 @@ def test_beat(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuni
     # due to the rotating frame and time difference, we get an extra phase depending on
     # the full freuency! we just test 1.5 eV
     # phase2 = ((1500+energy_pulse2)/HBAR)*t02
+    # uses rotating frame with the first detuning, so substract the first detuning from the second one
+    # for the energy of the second pulse.
     p2 = pulse.Pulse(tau=tau2, e_start=energy_pulse2-detuning, w_gain=0, e0=area2, t0=t02, phase=phase)
 
     print("energy p1:  {:.4f} mev".format(detuning))

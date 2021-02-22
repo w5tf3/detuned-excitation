@@ -113,8 +113,9 @@ def bloch_eq(t, x, pulse, delta_e):
     return np.array([_f, _p], dtype=complex)
 
 
-def bloch_eq_constrf(t, x, pulse_, rf_freq):
-    # eq. in frame rotating with system frequency
+def bloch_eq_constrf(t, x, pulse_, rf_freq=0):
+    # eq. in frame rotating with a constant frequency
+    # if rf_freq=0, it is rotating with the system frequency
     # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
     e_f = pulse_.get_total(t)
     delta = rf_freq
