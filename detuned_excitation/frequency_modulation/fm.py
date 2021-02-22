@@ -95,6 +95,50 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
         plt.show()
     return t, x, p
 
+
+def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, plot=False):
+    """
+    excites a two level system using a frequency modulated laser pulse.
+    tau: width of the gaussian shape laser pulse in femto seconds
+    dt: timestep for rk4 integration in fs
+    area: pulse area of pulse
+    detuning: base detuning of the laser field in meV
+    small_detuning: amplitude of the frequency modulation in meV
+    phase: adds a phase to the frequency modulation. it seems like this is not relevant though.
+    returns: time, array x containing electron occupation (x[:,0]) and polarization (x[:,1]), a pulse object  
+    """
+    # choose a wide enough time window
+    t0 = -4*tau
+    t1 = 4*tau
+    s = int((t1 - t0) / dt)
+    t = np.linspace(t0, t1, s + 1)
+    # this just sets the envelope of the laser. setting the frequency happens below.
+    p = pulse.Pulse(tau=tau, e_start=0, w_gain=0, e0=area)
+    # we now want to set the frequency with something oscillating like the rabi-freq of the system
+    # so we first need the time dependent rabi frequency.
+    # notice that we set the frequency (!) i.e. the laser energy, not directly the oscillating
+    # part of the laser, exp(i*phi(t)). to get phi(t), we would have to
+    # integrate the frequency over time.
+    # using a rotating frame with the light frequency, we only need the frequencies.
+    # this changes if we want a different rotating frame, for example if we want to
+    # consider two overlapping pulses.
+    detuning_f = detuning/HBAR
+    small_det_f = small_detuning/HBAR
+    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_f**2)
+    freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t+phase)
+    # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
+
+    # this one finally sets the frequency(t) using a lambda function
+    p.set_frequency(freq)
+    fm_freq = rf(0)
+    x0 = np.array([0,0],dtype=complex)
+    _,_,states,polars = tls_commons.two_level_fm(tau=tau, dt=dt, detuning=detuning, detuning_small=small_detuning, area=area, fm_freq=fm_freq)
+    x = np.empty([len(t),2], dtype=complex)
+    x[:,0] = states
+    x[:,1] = polars
+    return t, x, p
+
+
 # fm_pulsed_excitation()
 # fm_pulsed_excitation(tau=6000, area=2*np.pi, detuning=-0.1, small_detuning=0)
 # fm_pulsed_excitation(tau=6000, area=8*np.pi, detuning=-8, small_detuning=2)
