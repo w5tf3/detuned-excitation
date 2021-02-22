@@ -6,13 +6,14 @@ HBAR = 6.582119514e2  # meV fs
 
 class Pulse:
 
-    def __init__(self, tau, e_start, w_gain=0, t0=0, e0=1):
+    def __init__(self, tau, e_start, w_gain=0, t0=0, e0=1, phase=0):
         self.tau = tau  # in fs
         self.e_start = e_start  # in meV
         self.w_start = e_start / HBAR  # in 1 / fs
         self.w_gain = float(w_gain)  #  in 1/fs^2
         self.t0 = t0
         self.e0 = e0
+        self.phase = phase
         self.freq = None
 
     def __repr__(self):
@@ -61,10 +62,10 @@ class Pulse:
         :param t: time for which the phase/t should be returned
         :return: Carrier phase(t)/t, time dependent
         """
-        return self.w_start + 0.5*self.w_gain * (t - self.t0)
+        return self.w_start + 0.5*self.w_gain * (t - self.t0) + self.phase
 
     def get_full_phase(self,t):
-        return self.w_start * (t - self.t0) + 0.5*self.w_gain * ((t - self.t0) **2)
+        return self.w_start * (t - self.t0) + 0.5*self.w_gain * ((t - self.t0) **2) + self.phase
     
     def get_energies(self):
         """

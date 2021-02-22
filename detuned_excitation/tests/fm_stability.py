@@ -1,4 +1,4 @@
-import twolevelsystem as tl
+from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation
 import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
@@ -7,7 +7,7 @@ def fm_area():
     x = np.linspace(0,15,40)
     y = np.empty_like(x)
     for i in tqdm.trange(len(x)):
-        _,v,_ = tl.fm_pulsed_excitation(area=x[i]*np.pi)
+        _,v,_ = fm_pulsed_excitation(area=x[i]*np.pi)
         y[i] = v[-1,0]
     plt.plot(x,y)
     plt.xlabel("Pulse area/pi")

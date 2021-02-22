@@ -1,4 +1,4 @@
-from detuned_excitation.tests.twolevelsystem import fm_pulsed_excitation
+from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm

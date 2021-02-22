@@ -27,6 +27,12 @@ class Electric_field_envelope():
         return np.exp(-0.5 * (t/self.tau)**2)
 
 def two_level(t0, dt, t_end, f_start, p_start, energy, area, pulse_tau):
+    """
+    returns f,p for end timestep where f is real and p is complex.
+    uses fortran to solve time propagation of a two level system.
+    Constant laser energy, uses rotating frame with system frequency.
+    This means it works with small timesteps especially for small detunings.
+    """
     n_steps = int(abs(t_end-t0)/dt)+1
     # print(n_steps)
     # print(t0+dt*(n_steps-1))
@@ -107,13 +113,14 @@ def bloch_eq(t, x, pulse, delta_e):
     return np.array([_f, _p], dtype=complex)
 
 
-def bloch_eq_constrf(t, x, pulse_, _):
+def bloch_eq_constrf(t, x, pulse_, rf_freq):
     # eq. in frame rotating with system frequency
     # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
     e_f = pulse_.get_total(t)
+    delta = rf_freq
     f = x[0]
     p = x[1]
 
     _f = np.imag( np.conj(e_f) * p )
-    _p = 0.5j * e_f * ( 1 - 2 * f ) 
+    _p = 1j * delta * p + 0.5j * e_f * ( 1 - 2 * f ) 
     return np.array( [_f, _p], dtype=complex )
