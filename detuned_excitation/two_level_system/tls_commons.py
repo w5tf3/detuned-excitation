@@ -1,6 +1,7 @@
+from os import stat
 import numpy as np
 from detuned_excitation.two_level_system import tls
-# print(tls.__doc__)
+print(tls.__doc__)
 
 
 HBAR = 6.582119514e2  # meV fs
@@ -73,6 +74,16 @@ def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400
                                 e_energy2=energy2, a_chirp1=chirp1, a_chirp2=chirp2,
                                 e01=area1, e02=area2, delta_e=0, t02=t02)
     return f, polars, states
+
+
+def two_level_fm(tau=10000,dt=4,detuning=-10,detuning_small=3,area=7*np.pi,fm_freq=0.015217):
+    t0 = -4*tau
+    t1 = 4*tau
+    n_steps = int((t1 - t0) / dt) + 1
+    in_state=0
+    in_polar=0+0j
+    f,p,states,polars = tls.tls_fm(t0,dt,n_steps,in_state,in_polar,tau,detuning,detuning_small,area,fm_freq)
+    return f, p, states, polars
 
 
 def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
