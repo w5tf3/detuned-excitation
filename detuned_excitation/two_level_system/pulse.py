@@ -106,6 +106,16 @@ class RectanglePulse(Pulse):
     def get_envelope(self, t):
         return self.get_envelope_f()(t)
 
+    def get_rotation_axis_angle(self,t):
+        """
+        angle of bloch sphere rotation vector.
+        it is easier to compute it here, since it only depends on amplitude
+        and frequency (to be correct: detuning) of the laser
+        """
+        omega_r = self.get_envelope(t)
+        freq = np.abs(self.get_frequency(t))
+        return 0 if omega_r == 0 else np.arctan(omega_r/freq)
+
     def plot(self, t0, t1, n):
         t = np.linspace(t0, t1, n)
         y = [self.get_total(i) for i in t]

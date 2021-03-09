@@ -96,7 +96,7 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
     return t, x, p
 
 
-def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, plot=False):
+def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3):
     """
     excites a two level system using a frequency modulated laser pulse.
     tau: width of the gaussian shape laser pulse in femto seconds
@@ -125,7 +125,7 @@ def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detunin
     detuning_f = detuning/HBAR
     small_det_f = small_detuning/HBAR
     rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_f**2)
-    freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t+phase)
+    freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t)
     # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
 
     # this one finally sets the frequency(t) using a lambda function
@@ -151,31 +151,35 @@ def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3,
     excites a two level system using a frequency modulalted rectangle shape pulse.
     see fm_pulsed_excitation() above for more information.  
     """
-    t0 = -2*tau
-    t1 = 2*tau
+    t0 = -tau
+    t1 = tau
     s = int((t1 - t0) / dt)
     t = np.linspace(t0, t1, s + 1)
     p = pulse.RectanglePulse(tau=tau, e_start=0, w_gain=0, e0=area)
    
-    detuning = detuning/HBAR  # in rad/fs
-    small_det = small_detuning/HBAR  # rad/fs
-    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning**2)
-    freq = lambda t: detuning + small_det*np.sin(rf(0)*t+phase)
+    detuning_ = detuning/HBAR  # in rad/fs
+    small_det_ = small_detuning/HBAR  # rad/fs
+    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_**2)
+    # now using a 'rectangular modulation' instead of sin(...)
+    freq = lambda t: detuning_ + small_det_*(-1 if np.sin(rf(0)*t+phase)< 0 else 1)
     # print("max. rabifreq: {:.4f} rad/fs or {:.4f} THz (1/ps)".format(rf(0),1000*rf(0)/(2*np.pi)))
     # plt.plot(t,np.array([freq(i) for i in t])*HBAR)
     # plt.show() 
     p.set_frequency(freq)
     x0 = np.array([0,0],dtype=complex)
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
-    #ax2.plot(t,freq(t)*HBAR, 'b-')
-    ax.plot(t,[1 for i in t], 'g-')
-    ax.plot(t,x[:,0].real, 'r-')
-    ax.set_ylim(-0.1,1.1)
-    #ax2.set_ylim(-10,-20)
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+    ax2.plot(t,np.array([freq(t_) for t_ in t])*HBAR, 'b-')
+    ax1.plot(t,[1 for i in t], 'g-')
+    ax1.plot(t,x[:,0].real, 'r-')
+    ax3.plot(t, [360/(2*np.pi)*p.get_rotation_axis_angle(t_) for t_ in t])
+    ax1.set_ylim(-0.1,1.1)
+    ax2.set_ylim(detuning - small_detuning - 2, detuning + small_detuning + 2)
+    ax1.set_ylabel("occupation")
+    ax2.set_ylabel("detuning")
+    ax3.set_ylabel("rot. ax. angle")
     plt.show()
-    return t, x
+    return t, x, p
 
 # detuned_rect_pulse(tau=20000, area=10*np.pi, detuning=-7, small_detuning=2)
 

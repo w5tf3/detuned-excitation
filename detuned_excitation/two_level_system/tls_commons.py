@@ -1,7 +1,7 @@
 from os import stat
 import numpy as np
 from detuned_excitation.two_level_system import tls
-print(tls.__doc__)
+# print(tls.__doc__)
 
 
 HBAR = 6.582119514e2  # meV fs

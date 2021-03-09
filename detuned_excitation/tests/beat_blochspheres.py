@@ -7,7 +7,7 @@ import os
 import tqdm
 
 f,s,t,p,_ = am_twopulse_excitation(dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1812)
-t2, x2 = test_beat(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
+t2, x2, p_ = test_beat(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
 s = x2[:,0].real
 p = x2[:,1]
 t=t2

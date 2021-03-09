@@ -1,4 +1,4 @@
-from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation
+from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation, fm_rect_pulse
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
@@ -6,7 +6,9 @@ import numpy as np
 import os
 import tqdm
 
-t, x1, p1 = fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
+#t, x1, p1 = fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
+t, x1, p1 = fm_rect_pulse(3000, dt=0.5, area=5*np.pi, detuning=-12, small_detuning=4)
+
 plt.plot(t,x1[:,0].real)
 plt.show()
 
@@ -32,9 +34,9 @@ bloch_z = 2*x1[:,0].real - 1
 
 # rotation vector
 # remember this one is for a rotating frame with laser frequency.
-rot_x = -p1.get_envelope(t)
+rot_x = np.array([-p1.get_envelope(t_) for t_ in t])
 rot_y = 0
-rot_z = p1.get_frequency(t)
+rot_z = np.array([-p1.get_frequency(t_) for t_ in t])
 
 norm = np.sqrt(rot_x**2 + rot_y**2 + rot_z**2)
 rot_x /= norm
@@ -44,11 +46,12 @@ rot_z /= norm
 ax.plot(bloch_x, bloch_y, bloch_z)
 
 # write data to file
-def to_file(filename="data.txt"):
-    with open(filename, 'w') as f:
-        print("writing file")
-        for i in range(len(t)):
-            f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(x1[i,0]), np.real(x1[i,1]), np.imag(x1[i,1])))
+# def to_file(filename="data.txt"):
+#     with open(filename, 'w') as f:
+#         print("writing file")
+#         for i in range(len(t)):
+#             f.write("{:.4f} {:.4f} {:.4f} {:.4f}\n".format(t[i],np.real(x1[i,0]), np.real(x1[i,1]), np.imag(x1[i,1])))
+
 # rotation axis vector
 # ax.quiver(0,0,0,rot_x[0],rot_y[0],rot_z[0])
 
@@ -58,11 +61,11 @@ def to_file(filename="data.txt"):
 
 plt.show()
 
-
 def video_pics():
     dir = os.path.dirname(__file__)
     print(dir)
     j = 0
+    fig = plt.figure()
     for i in tqdm.trange(1,len(t)-100,100):
         plt.close(fig)
         fig = plt.figure()
@@ -85,3 +88,5 @@ def video_pics():
         ax.plot(bloch_x[i:i+50], bloch_y[i:i+50], bloch_z[i:i+50], color='tab:red')
         ax.quiver(0 ,0 ,0, rot_x[i+50], rot_y[i+50], rot_z[i+50], color='tab:orange')
         plt.savefig(dir+"/pics/image_{}.png".format(j))
+
+video_pics()

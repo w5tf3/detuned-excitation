@@ -45,7 +45,7 @@ def test_beat(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuni
     p1 = pulse.Pulse(tau=tau1, e_start=0, w_gain=0, e0=area1, t0=0)
     rf = lambda t: np.sqrt((p1.get_envelope_f()(t))**2 + (detuning/HBAR)**2)
     rf_max = rf(t=0)  # max of rabifreq
-    p1.plot(t0,t1, 200)
+    # p1.plot(t0,t1, 200)
 
     energy_pulse2 = detuning - HBAR*rf_max
     # due to the rotating frame and time difference, we get an extra phase depending on
@@ -63,18 +63,18 @@ def test_beat(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuni
     p_total = pulse.MultiPulse(p1, p2)
     x0 = np.array([0,0],dtype=complex)
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq_constrf, p_total, detuning/HBAR)
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
+    #fig, ax = plt.subplots()
+    #ax2 = ax.twinx()
     #ax2.plot(t,freq(t)*HBAR, 'b-')
-    ax.plot(t,x[:,0].real)
-    ax.set_ylim(-0.1,1.1)
+    #ax.plot(t,x[:,0].real)
+    #ax.set_ylim(-0.1,1.1)
     #ax2.set_ylim(-10,-20)
-    plt.show()
-    return t, x
+    #plt.show()
+    return t, x, p_total
 
 # test_beat(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
 
-def am_twopulse_excitation(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1):
+def am_twopulse_excitation(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1, detuning2=False):
     """
     two pulses added together, forming a beat. t02 is the time difference between the two pulses.
     pulse 1 is centered around t=0, pulse 2 around t02.
@@ -94,12 +94,14 @@ def am_twopulse_excitation(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*
     # the energy of the second laser should be the same as the first one, but reduced by rabifrequency*HBAR
     # factor = 1 seems to be optimal
     energy_pulse2 = detuning - factor * HBAR*rf_max
+    if detuning2:
+        energy_pulse2 = detuning2
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
     f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02)
     return f, states, t, polars, energy_pulse2
 
-def test_stability_pulse1(dur1, ar1, tau2, area2, detuning=-5, t02=0, dt=1):
+def test_stability_pulse1(dur1, ar1, tau2, area2, detuning=-5, t02=0, dt=1, detuning2=False):
     """
     test the stability of an excitation with two detuned pulses with respect to
     certain parameters
@@ -109,7 +111,7 @@ def test_stability_pulse1(dur1, ar1, tau2, area2, detuning=-5, t02=0, dt=1):
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_,_ = am_twopulse_excitation(t02=t02, dt=dt, tau1=x_ax[j], tau2=tau2, area1=y_ax[i], area2=area2)
+           endvals[i,j],_,_,_,_ = am_twopulse_excitation(detuning=detuning, detuning2=detuning2, t02=t02, dt=dt, tau1=x_ax[j], tau2=tau2, area1=y_ax[i], area2=area2)
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, tau1:{:.4f}, area1:{:.4f}".format(ind,x_ax[ind[1]],y_ax[ind[0]]/np.pi))
@@ -156,7 +158,7 @@ def test_stability_t0(t0_arr, dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area
     plt.show()
     return endvals
 
-def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5, t02=0, dt=1):
+def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5,detuning2=False, t02=0, dt=1):
     """
     test the stability of an excitation with two detuned pulses with respect to
     certain parameters
@@ -166,7 +168,7 @@ def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5, t02=0, dt=1):
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_,_ = am_twopulse_excitation(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=x_ax[j])
+           endvals[i,j],_,_,_,_ = am_twopulse_excitation(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=x_ax[j],detuning=detuning, detuning2=detuning2)
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, area1:{:.4f}, area2:{:.4f}".format(ind,x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi))
@@ -174,6 +176,54 @@ def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5, t02=0, dt=1):
     plt.ylabel("area2/pi")
     plt.pcolormesh(x_ax/np.pi, y_ax/np.pi, endvals, shading='auto')
     plt.plot(x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi, 'r.')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax, endvals
+
+def detuning_from_pulse1(ar1, tau1, detuning1=-5):
+    x_ax = tau1
+    y_ax = ar1
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+            p1 = pulse.Pulse(tau=x_ax[j], e_start=detuning1, w_gain=0, e0=y_ax[i], t0=0)
+            rf = lambda t: np.sqrt((p1.get_envelope_f()(t))**2 + (detuning1/HBAR)**2)
+            rf_max = rf(t=0)
+            endvals[i,j] = - (detuning1 - HBAR*rf_max)
+      # max of rabifreq
+    # the energy of the second laser should be the same as the first one, but reduced by rabifrequency*HBAR
+    # factor = 1 seems to be optimal
+    #ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    #max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
+    #print("{}, tau1:{:.4f}, tau2:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y,endvals[ind[0],ind[1]]))
+    plt.xlabel("tau1")
+    plt.ylabel("area1/pi")
+    plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
+    #plt.plot(x_ax[ind[1]],y_ax[ind[0]], 'r.')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax, endvals
+
+
+def test_stability_tau(ar1, ar2, area1, area2, detuning=-5, t02=0, dt=1):
+    """
+    test the stability of an excitation with two detuned pulses with respect to
+    certain parameters
+    """
+    x_ax = ar1
+    y_ax = ar2
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           endvals[i,j],_,_,_,_ = am_twopulse_excitation(t02=t02, dt=dt, tau2=y_ax[i], tau1=x_ax[j], area2=area2, area1=area1)
+    
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
+    print("{}, tau1:{:.4f}, tau2:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y,endvals[ind[0],ind[1]]))
+    plt.xlabel("tau1")
+    plt.ylabel("tau2")
+    plt.pcolormesh(x_ax, y_ax, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]],y_ax[ind[0]], 'r.')
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals
