@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import erf
 
 HBAR = 6.582119514e2  # meV fs
 
@@ -15,6 +16,7 @@ class Pulse:
         self.e0 = e0
         self.phase = phase
         self.freq = None
+        self.phase_ = None
 
     def __repr__(self):
         return "%s(tau=%r, e_start=%r, w_gain=%r, t0=%r, e0=%r)" % (
@@ -37,6 +39,15 @@ class Pulse:
     def get_envelope_f(self):
         return lambda t: self.e0 * np.exp(-0.5 * ((t - self.t0) / self.tau) ** 2) / (np.sqrt(2 * np.pi) * self.tau)
 
+    def get_envelope_derivative_f(self):
+        return lambda t: -self.get_envelope(t) * ((t - self.t0) / self.tau)
+    
+    def get_envelope_derivative(self, t):
+        return -self.get_envelope(t) * ((t - self.t0) / self.tau)
+
+    def get_envelope_square_integral(self, t):
+        return self.e0/(2*np.sqrt(2)) * (1 + erf((t-self.t0)/self.tau))
+    
     def set_frequency(self, f):
         """
         use a lambda function f taking a time t to set the time dependent frequency.
@@ -52,7 +63,9 @@ class Pulse:
         if self.freq is not None:
             return self.freq(t)
         return self.w_start + self.w_gain * (t - self.t0)
-
+    
+    def set_phase(self, f):
+        self.phase_ = f
 
     def get_phase(self, t):
         """
@@ -62,9 +75,11 @@ class Pulse:
         :param t: time for which the phase/t should be returned
         :return: Carrier phase(t)/t, time dependent
         """
-        return self.w_start + 0.5*self.w_gain * (t - self.t0) + self.phase
+        return self.w_start + 0.5*self.w_gain * (t - self.t0) + self.phase/t
 
     def get_full_phase(self,t):
+        if self.phase_ is not None:
+            return self.phase_(t)
         return self.w_start * (t - self.t0) + 0.5*self.w_gain * ((t - self.t0) **2) + self.phase
     
     def get_energies(self):
@@ -150,9 +165,11 @@ class ChirpedPulse(Pulse):
 
 
 class MultiPulse:
-    def __init__(self, pulse1, pulse2):
+    def __init__(self, pulse1, pulse2, rf_freq=None):
         self.pulse1 = pulse1
         self.pulse2 = pulse2
+        # make this a lambda function of t
+        self.rf_freq = rf_freq
 
     def get_total(self, t):
         """

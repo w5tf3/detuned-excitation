@@ -1,4 +1,4 @@
-from detuned_excitation.two_level_system import tls_commons, pulse
+from detuned_excitation.two_level_system import tls_commons, pulse, helper
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -40,7 +40,7 @@ def test_rabifreq():
     plt.plot(t,f)
     plt.show()
 
-def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True, plot=False):
+def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True, plot=False, filename=None, factor=1.0, modulation_energy=None):
     """
     excites a two level system using a frequency modulated laser pulse.
     tau: width of the gaussian shape laser pulse in femto seconds
@@ -49,6 +49,7 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
     detuning: base detuning of the laser field in meV
     small_detuning: amplitude of the frequency modulation in meV
     phase: adds a phase to the frequency modulation. it seems like this is not relevant though.
+    factor: factor the pulse envelope is multiplied with before calculating the rabi frequency.
     returns: time, array x containing electron occupation (x[:,0]) and polarization (x[:,1]), a pulse object  
     """
     # choose a wide enough time window
@@ -68,11 +69,15 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
     # consider two overlapping pulses.
     detuning_f = detuning/HBAR
     small_det_f = small_detuning/HBAR
-    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_f**2)
+    # detuned rabi frequency
+    rf = lambda t: np.sqrt((factor * p.get_envelope_f()(t))**2 + detuning_f**2)
     freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t+phase)
+    print("calculated modulation energy: {:.4f}".format(HBAR*rf(0)))
     if use_t_zero == False:
         freq = lambda t: detuning_f + small_det_f*np.sin(rf(t)*t+phase)
     
+    if modulation_energy is not None:
+        freq = lambda t: detuning_f + small_det_f*np.sin((modulation_energy/HBAR)*t+phase)
     # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
 
     # this one finally sets the frequency(t) using a lambda function
@@ -93,10 +98,14 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
         plt.title("{:.0f}fs, {:.0f}pi, {}meV, {}meV".format(tau,area/np.pi,detuning, small_detuning))
         # ax2.set_ylim(-10,-20)
         plt.show()
+    if filename is not None:
+        detunings = np.array([freq(t_) for t_ in t])*HBAR
+        # angles = np.array([360/(2*np.pi)*p.get_rotation_axis_angle(t_) for t_ in t])
+        helper.export_csv(filename, t, x[:,0].real, detunings, np.array([p.get_envelope(v) for v in t])/p.get_envelope(0))
     return t, x, p
 
 
-def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3):
+def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, factor=1.0, modulation_energy=None):
     """
     excites a two level system using a frequency modulated laser pulse.
     tau: width of the gaussian shape laser pulse in femto seconds
@@ -105,6 +114,7 @@ def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detunin
     detuning: base detuning of the laser field in meV
     small_detuning: amplitude of the frequency modulation in meV
     phase: adds a phase to the frequency modulation. it seems like this is not relevant though.
+    factor: factor the pulse envelope is multiplied with before calculating the rabi frequency.
     returns: time, array x containing electron occupation (x[:,0]) and polarization (x[:,1]), a pulse object  
     """
     # choose a wide enough time window
@@ -124,13 +134,17 @@ def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detunin
     # consider two overlapping pulses.
     detuning_f = detuning/HBAR
     small_det_f = small_detuning/HBAR
-    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_f**2)
+    rf = lambda t: np.sqrt((factor * p.get_envelope_f()(t))**2 + detuning_f**2)
     freq = lambda t: detuning_f + small_det_f*np.sin(rf(0)*t)
-    # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
+    if modulation_energy is not None:
+        freq = lambda t: detuning_f + small_det_f*np.sin((modulation_energy/HBAR)*t)
+    # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation
 
     # this one finally sets the frequency(t) using a lambda function
     p.set_frequency(freq)
     fm_freq = rf(0)
+    if modulation_energy is not None:
+        fm_freq = modulation_energy/HBAR
     x0 = np.array([0,0],dtype=complex)
     _,_,states,polars = tls_commons.two_level_fm(tau=tau, dt=dt, detuning=detuning, detuning_small=small_detuning, area=area, fm_freq=fm_freq)
     x = np.empty([len(t),2], dtype=complex)
@@ -146,39 +160,49 @@ def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detunin
 # fm_pulsed_excitation(tau=9000, area=7*np.pi, detuning=7, small_detuning=2)
 # fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=3, small_detuning=1.5)
 
-def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0):
+def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, filename=None, plot=True, factor=1.0, rect_modul=False, t_0=None):
     """
     excites a two level system using a frequency modulalted rectangle shape pulse.
     see fm_pulsed_excitation() above for more information.  
     """
     t0 = -tau
     t1 = tau
+    if t_0 is not None:
+        t0 = -t_0
+        t1 = t_0
     s = int((t1 - t0) / dt)
     t = np.linspace(t0, t1, s + 1)
     p = pulse.RectanglePulse(tau=tau, e_start=0, w_gain=0, e0=area)
    
     detuning_ = detuning/HBAR  # in rad/fs
     small_det_ = small_detuning/HBAR  # rad/fs
-    rf = lambda t: np.sqrt((p.get_envelope_f()(t))**2 + detuning_**2)
+    rf = lambda t: factor * np.sqrt((p.get_envelope_f()(t))**2 + detuning_**2)
     # now using a 'rectangular modulation' instead of sin(...)
-    freq = lambda t: detuning_ + small_det_*(-1 if np.sin(rf(0)*t+phase)< 0 else 1)
-    # print("max. rabifreq: {:.4f} rad/fs or {:.4f} THz (1/ps)".format(rf(0),1000*rf(0)/(2*np.pi)))
+    freq = lambda t: detuning_ + small_det_*np.sin(rf(0)*t+phase) #(-1 if np.sin(rf(0)*t+phase)< 0 else 1)
+    if rect_modul:
+        freq = lambda t: detuning_ + small_det_*(-1 if np.sin(rf(0)*t+phase)< 0 else 1)
+    print("max. rabifreq: {:.4f} rad/fs or {:.4f} THz (1/ps)".format(rf(0),1000*rf(0)/(2*np.pi)))
     # plt.plot(t,np.array([freq(i) for i in t])*HBAR)
     # plt.show() 
     p.set_frequency(freq)
     x0 = np.array([0,0],dtype=complex)
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
-    ax2.plot(t,np.array([freq(t_) for t_ in t])*HBAR, 'b-')
-    ax1.plot(t,[1 for i in t], 'g-')
-    ax1.plot(t,x[:,0].real, 'r-')
-    ax3.plot(t, [360/(2*np.pi)*p.get_rotation_axis_angle(t_) for t_ in t])
-    ax1.set_ylim(-0.1,1.1)
-    ax2.set_ylim(detuning - small_detuning - 2, detuning + small_detuning + 2)
-    ax1.set_ylabel("occupation")
-    ax2.set_ylabel("detuning")
-    ax3.set_ylabel("rot. ax. angle")
-    plt.show()
+    detunings = np.array([freq(t_) for t_ in t])*HBAR
+    angles = np.array([360/(2*np.pi)*p.get_rotation_axis_angle(t_) for t_ in t])
+    if plot:
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+        ax2.plot(t,detunings, 'b-')
+        ax1.plot(t,[1 for i in t], 'g-')
+        ax1.plot(t,x[:,0].real, 'r-')
+        ax3.plot(t, angles)
+        ax1.set_ylim(-0.1,1.1)
+        ax2.set_ylim(detuning - small_detuning - 2, detuning + small_detuning + 2)
+        ax1.set_ylabel("occupation")
+        ax2.set_ylabel("detuning")
+        ax3.set_ylabel("rot. ax. angle")
+        plt.show()
+    if filename is not None:
+        helper.export_csv(filename, t, x[:,0].real, detunings, angles, np.array([p.get_envelope(v) for v in t])/p.get_envelope(0))
     return t, x, p
 
 # detuned_rect_pulse(tau=20000, area=10*np.pi, detuning=-7, small_detuning=2)

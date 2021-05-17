@@ -1,6 +1,7 @@
 from os import stat
 import numpy as np
 from detuned_excitation.two_level_system import tls
+from detuned_excitation.two_level_system import sixls
 # print(tls.__doc__)
 
 
@@ -76,6 +77,21 @@ def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400
     return f, polars, states
 
 
+def twopulse_cw(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, energy1=0, energy2=0, chirp1=60e-6, area1=7*np.pi, area2=0):
+    """
+    use the fortran implementation compiled with f2py to solve the diff. eqs. for two simultaneous pulses
+    the default parameters show a chirped excitation with one pulse
+    the second pulse is a cw with amplitude area2, so it is not normalized to the simulation length.
+    """
+    n_steps = int(abs(t_end-t0)/dt)+1
+    f, _, states, polars = tls.tls_twopulse_cw_second(t_0=t0, dt=dt, n_steps=n_steps, in_state=f_start,
+                                in_polar=p_start, tau1=tau1, e_energy1=energy1,
+                                e_energy2=energy2, a_chirp1=chirp1, a_chirp2=0.0,
+                                e01=area1, e02=area2, delta_e=0, t02=t02)
+    mean_f = np.mean(states[-int(len(states)/10):])
+    return mean_f, polars, states
+
+
 def two_level_fm(tau=10000,dt=4,detuning=-10,detuning_small=3,area=7*np.pi,fm_freq=0.015217):
     t0 = -4*tau
     t1 = 4*tau
@@ -84,6 +100,21 @@ def two_level_fm(tau=10000,dt=4,detuning=-10,detuning_small=3,area=7*np.pi,fm_fr
     in_polar=0+0j
     f,p,states,polars = tls.tls_fm(t0,dt,n_steps,in_state,in_polar,tau,detuning,detuning_small,area,fm_freq)
     return f, p, states, polars
+
+
+def six_levels_mixed_polar(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, energy_2=1.0, e01=1*np.pi, e02=0*np.pi, t02=0.0, polar_m1=1.0, polar_m2=1.0, bx=0, bz=0, state_param=np.array([1, 0, 0, 0, 0, 0]), polarizations_param=np.zeros([15], dtype=complex), delta_B=-0.25, d0=0.25, d1=0.12, d2=0.05, delta_E=0.0):
+    """
+    
+    """
+    t = np.arange(t_0, t_end, dt)
+    n_steps = int(abs(t_end - t_0)/dt)
+
+    # light_polarization = 0 is purely negative circular polarized light, l_p = 1 purely positive cpl
+    # polar_p**2 + polar_m**2 = 1
+    energy_1 += delta_E
+    energy_2 += delta_E
+    endstate,endpolar,states,polars = sixls.sixls_twopulse(t_0, dt, n_steps, state_param, polarizations_param, polar_m1, polar_m2, tau1, tau2, energy_1, energy_2, e01, e02, bx, bz, delta_B, d0, d1, d2, delta_E, t02)
+    return t, states, endstate, endpolar, polars
 
 
 def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
@@ -130,6 +161,20 @@ def bloch_eq_constrf(t, x, pulse_, rf_freq=0):
     # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
     e_f = pulse_.get_total(t)
     delta = rf_freq
+    f = x[0]
+    p = x[1]
+
+    _f = np.imag( np.conj(e_f) * p )
+    _p = 1j * delta * p + 0.5j * e_f * ( 1 - 2 * f ) 
+    return np.array( [_f, _p], dtype=complex )
+
+
+def bloch_eq_general_rf(t, x, pulse_, _):
+    # eq. in frame rotating with a constant frequency
+    # if rf_freq=0, it is rotating with the system frequency
+    # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
+    e_f = pulse_.get_total(t)
+    delta = pulse_.rf_freq(t)
     f = x[0]
     p = x[1]
 
