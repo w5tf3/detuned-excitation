@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from detuned_excitation.frequency_modulation.fm import fm_pulsed_fortran
+from detuned_excitation.frequency_modulation.fm import fm_pulsed_fortran, fm_rect_pulse
 
 
 HBAR = 6.582119514e2  # meV fs
@@ -22,8 +22,10 @@ def h_twols(t, pulse):
 
 
 
-def twolevels_dressedstates(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3):
+def twolevels_dressedstates(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, rect=False):
     t,x,pulse = fm_pulsed_fortran(tau, dt, area, detuning, small_detuning)
+    if rect:
+        t,x,pulse = fm_rect_pulse(tau, dt, area, detuning, small_detuning)
     states = np.empty([len(t),2])
     states[:,0] = 1-x[:,0].real
     states[:,1] = x[:,0].real
@@ -34,7 +36,7 @@ def twolevels_dressedstates(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_d
     plt.legend()
     plt.show()
     e_values = np.empty([len(t),2])
-    e_vectors = np.empty([len(t),2,2])
+    e_vectors = np.empty([len(t),2,2], dtype=complex)
     for i in range(len(t)):
         e_values[i],e_vectors[i] = np.linalg.eigh(h_twols(t[i],pulse))
     
@@ -95,5 +97,6 @@ def twolevels_dressedstates(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_d
 
 
     
-twolevels_dressedstates(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
-twolevels_dressedstates(tau=2000, area=4*np.pi, detuning=0.1, small_detuning=0)
+# twolevels_dressedstates(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
+# twolevels_dressedstates(tau=2000, area=4*np.pi, detuning=0.1, small_detuning=0)
+twolevels_dressedstates(3000, dt=1, area=5*np.pi, detuning=-12, small_detuning=4, rect=True)

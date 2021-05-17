@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from detuned_excitation.amplitude_modulation.am import test_beat
+from detuned_excitation.amplitude_modulation.am import am_twocolor
 
 
 HBAR = 6.582119514e2  # meV fs
@@ -23,7 +23,7 @@ def h_twols(t, pulse, rf_freq):
 
 
 def twolevels_dressedstates(tau1=6200, tau2=9600, dt=1, area1=29*np.pi, area2=29*np.pi, t02=-1800,detuning=-5):
-    t,x,pulse = test_beat(tau1, tau2, dt, area1, area2, detuning, t02)
+    t,x,pulse = am_twocolor(tau1, tau2, dt, area1, area2, detuning, t02)
     states = np.empty([len(t),2])
     states[:,0] = 1-x[:,0].real
     states[:,1] = x[:,0].real
