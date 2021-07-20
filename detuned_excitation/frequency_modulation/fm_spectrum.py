@@ -1,4 +1,4 @@
-from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation, fm_pulsed_fortran
+from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation, fm_pulsed_fortran, fm_rect_pulse
 import numpy as np
 from numpy.fft.helper import fftfreq
 from detuned_excitation.two_level_system import pulse, helper
@@ -25,7 +25,7 @@ def fm_pulsed_spectrum(tau=5000, dt=1, area=6*np.pi, detuning=-12, small_detunin
     # dont really need the freq. here, just the phase
     # freq = lambda t: detuning_f + small_det_f*np.sin(rf_0*t)
     # the phase is the integral of the frqeuency
-    phase = lambda t : (detuning_f * t + (1/rf_0) * small_det_f * np.cos(rf_0*t))
+    phase = lambda t : (detuning_f * t - 1j* (1/rf_0) * small_det_f * np.sin(rf_0*t))  #*0.5*np.exp(1j*rf_0*t))
     p.set_phase(phase)
     pulse_total = np.array([p.get_total(v) for v in t])
     pulse_total = pulse_total
@@ -49,9 +49,24 @@ def fm_pulsed_spectrum(tau=5000, dt=1, area=6*np.pi, detuning=-12, small_detunin
     print(modulation_index)
     print("j0(mu):{:.4f}, j1(mu):{:.4f}".format(special.j0(modulation_index),special.j1(modulation_index)))
     print("j1(mu)*area/pi : {:.4f}".format(special.j1(modulation_index)*area/np.pi))
-    plt.plot(fft_freqs, np.abs(f))
+    plt.xlim(-50,50)
+    plt.plot(-fft_freqs, np.abs(f))
     plt.xlabel("detuning in meV")
     plt.show()
+    plt.xlim(-50,50)
+    plt.plot(-fft_freqs, np.log(1+np.abs(f)))
+    plt.xlabel("detuning in meV")
+    plt.show()
+    return -fft_freqs, np.abs(f)
+    # for i in range(len(fft_freqs)):
+    #     if -fft_freqs[i] > 0:
+    #         f[i] = 0.0
+    # plt.xlim(-50,50)
+    # plt.plot(-fft_freqs, np.abs(f))
+    # plt.xlabel("detuning in meV")
+    # plt.show()
+    # f = np.fft.ifftshift(f)
+    # fft_freqs = np.fft.ifftshift(fft_freqs)
 
 # fm_pulsed_spectrum(tau=5000, dt=1, area=30*np.pi, detuning=-12, small_detuning=4)
 # fm_pulsed_spectrum(tau=3500, dt=1, area=6*np.pi, detuning=-12, small_detuning=4)
@@ -59,10 +74,17 @@ def fm_pulsed_spectrum(tau=5000, dt=1, area=6*np.pi, detuning=-12, small_detunin
 # fm_pulsed_spectrum(tau=5000, area=6*np.pi, detuning=-12, small_detuning=4)
 # fm_pulsed_spectrum(tau=12000, area=7*np.pi, detuning=-8, small_detuning=5)
 # fm_pulsed_spectrum(tau=3000, area=33*np.pi, detuning=-12, small_detuning=4, factor=0.23)
-fm_pulsed_spectrum(tau=3000, area=15*np.pi, detuning=-12, small_detuning=4, factor=1.0)
-fm_pulsed_spectrum(tau=3000, area=30*np.pi, detuning=-6, small_detuning=1, modulation_energy=9.65)
+# fm_pulsed_spectrum(tau=3000, area=15*np.pi, detuning=-12, small_detuning=4, factor=1.0)
+# fm_pulsed_spectrum(tau=3000, area=30*np.pi, detuning=-6, small_detuning=1, modulation_energy=9.65)
+# fm_pulsed_spectrum(tau=4000, area=30*np.pi, detuning=-6, small_detuning=1, modulation_energy=8.2575)
+# fm_pulsed_spectrum(tau=4000, area=49.57*np.pi, detuning=-6, small_detuning=1, modulation_energy=-11.393)
+# fm_pulsed_spectrum(tau=4000, detuning=-6, small_detuning=1, modulation_energy=10.1225, area=6.7347*np.pi)
+# fm_pulsed_spectrum(tau=4000, detuning=-6, small_detuning=1, modulation_energy=8.3237, area=30.3010*np.pi)
+# # fm_pulsed_spectrum(tau=4000, detuning=-6, small_detuning=2, modulation_energy=6.0843, area=6.2207*np.pi)
+# fm_pulsed_spectrum(tau=4000, detuning=-6, small_detuning=1, modulation_energy=8.3237, area=30.3010*np.pi)
+# fm_pulsed_spectrum(tau=4000, detuning=-6, small_detuning=2, modulation_energy=6.0843, area=6.2207*np.pi)
 
-def fm_rectangle_spectrum(tau=3500, dt=1, area=6*np.pi, detuning=-12, small_detuning=4):
+def fm_rectangle_spectrum(tau=3500, dt=1, area=6*np.pi, detuning=-12, small_detuning=4, new_rabi=False):
     t0 = -8 * tau
     t1 = 8 * tau
     s = int((t1 - t0) / dt)
@@ -77,8 +99,13 @@ def fm_rectangle_spectrum(tau=3500, dt=1, area=6*np.pi, detuning=-12, small_detu
     # the phase is the integral of the frqeuency
     phase = lambda t : (detuning_f * t + (1/rf_0) * small_det_f * np.cos(rf_0*t))
     p.set_phase(phase)
+    if new_rabi:
+        t,x,p = fm_rect_pulse(tau, dt, area,detuning, small_detuning,rect_modul=True, rect_modul_rf=True)
+    
     pulse_total = np.array([p.get_total(v) for v in t])
     pulse_total = pulse_total
+    plt.plot(pulse_total.real)
+    plt.show()
     # now fft the pulse
     f = np.fft.fft(pulse_total)
     f = np.fft.fftshift(f)
@@ -98,11 +125,13 @@ def fm_rectangle_spectrum(tau=3500, dt=1, area=6*np.pi, detuning=-12, small_detu
     
     modulation_index = np.abs(small_detuning / rf_0)
     print("j0(mu):{:.4f}, j1(mu):{:.4f}".format(special.j0(modulation_index),special.j1(modulation_index)))
-    
+    plt.xlim(-30,30)
     plt.plot(fft_freqs, np.abs(f))
+    plt.ylabel("|E(omega)|")
+    plt.xlabel("detuning (meV)")
     plt.show()
 
-fm_rectangle_spectrum(tau=3500, dt=1, area=6*np.pi, detuning=-12, small_detuning=4)
+fm_rectangle_spectrum(tau=4000, dt=1, area=6*np.pi, detuning=-8, small_detuning=2, new_rabi=True)
 
 def custom_colormap(plot=False):
     cdict = {

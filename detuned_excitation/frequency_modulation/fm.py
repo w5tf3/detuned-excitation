@@ -40,6 +40,49 @@ def test_rabifreq():
     plt.plot(t,f)
     plt.show()
 
+def fm_cutoff(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True, factor=1.0, modulation_energy=None, use_exp=False):
+    """
+    if use_exp=True, only uses one of the sidebands. 
+    rf_energy: set the energy of the rotating frame. default uses the detuning as rotating frame energy,
+    so the energy of the first pulse is 'reduced' to zero. this option also seems to deliver
+    the smoothest dynamics on the bloch sphere. 
+    """
+    t0 = -4*tau
+    t1 = 4*tau
+    s = int((t1 - t0) / dt)
+    t = np.linspace(t0, t1, s + 1)
+    _t0=0
+    # if rf_energy is None:
+    rf_energy = detuning
+    # rotating frame with "detuning", i.e. frequency (energy) of pulse 1 would be e_pulse1 = 0
+    # e_pulse1 = detuning - rf_energy
+    
+    p = pulse.Pulse(tau=tau, e_start=0, w_gain=0, e0=area)
+    detuning_f = detuning/HBAR
+    small_det_f = small_detuning/HBAR
+    # detuned rabi frequency
+    rf = lambda t: np.sqrt((factor * p.get_envelope_f()(t))**2 + detuning_f**2)
+    freq = lambda t: detuning_f-rf_energy/HBAR + small_det_f*np.sin(rf(0)*t+phase)
+    print("calculated modulation energy: {:.4f}".format(HBAR*rf(0)))
+    if use_t_zero == False:
+        freq = lambda t: detuning_f-rf_energy/HBAR + small_det_f*np.sin(rf(t)*t+phase)
+    
+    if modulation_energy is not None:
+        freq = lambda t: detuning_f-rf_energy/HBAR + small_det_f*np.sin((modulation_energy/HBAR)*t+phase)
+
+    # this one finally sets the frequency(t) using a lambda function
+    phase = lambda t: (small_det_f/rf(0))*np.cos(rf(0)*t)
+    if modulation_energy is not None:
+        phase = lambda t: (HBAR*small_det_f/modulation_energy)*np.cos((modulation_energy/HBAR)*t)
+        if use_exp:
+            phase = lambda t: -1j*(HBAR*small_det_f/modulation_energy)*0.5*np.exp(1j*(modulation_energy/HBAR)*t)
+        
+    p.set_phase(phase)
+    # pulse_total = np.array([p.get_total(v) for v in t])
+    x0 = np.array([0,0],dtype=complex)
+    _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq_constrf, p, rf_energy/HBAR)
+    return t, x, p
+
 def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, use_t_zero=True, plot=False, filename=None, factor=1.0, modulation_energy=None):
     """
     excites a two level system using a frequency modulated laser pulse.
@@ -77,6 +120,7 @@ def fm_pulsed_excitation(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detu
         freq = lambda t: detuning_f + small_det_f*np.sin(rf(t)*t+phase)
     
     if modulation_energy is not None:
+        # freq = lambda t: detuning_f + small_det_f*np.exp(1j*(modulation_energy/HBAR)*t+phase)
         freq = lambda t: detuning_f + small_det_f*np.sin((modulation_energy/HBAR)*t+phase)
     # p.set_frequency(lambda t: 60/(1000**2)*t)  # this would be a chirped excitation like above
 
@@ -160,7 +204,7 @@ def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detunin
 # fm_pulsed_excitation(tau=9000, area=7*np.pi, detuning=7, small_detuning=2)
 # fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=3, small_detuning=1.5)
 
-def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, filename=None, plot=True, factor=1.0, rect_modul=False, t_0=None):
+def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, filename=None, plot=True, factor=1.0, rect_modul=False, t_0=None, rect_modul_rf=False):
     """
     excites a two level system using a frequency modulalted rectangle shape pulse.
     see fm_pulsed_excitation() above for more information.  
@@ -181,6 +225,20 @@ def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3,
     freq = lambda t: detuning_ + small_det_*np.sin(rf(0)*t+phase) #(-1 if np.sin(rf(0)*t+phase)< 0 else 1)
     if rect_modul:
         freq = lambda t: detuning_ + small_det_*(-1 if np.sin(rf(0)*t+phase)< 0 else 1)
+    if rect_modul_rf:
+        # detuning is negative
+        small_freq = np.sqrt((p.get_envelope_f()(0))**2 + (detuning_+small_det_)**2)
+        big_freq = np.sqrt((p.get_envelope_f()(0))**2 + (detuning_-small_det_)**2)
+        small_time = np.pi/small_freq
+        big_time = np.pi/big_freq
+        total_time = small_time + big_time
+        def freq(t):
+            t_new = (t+1.5*tau) % total_time
+            if t_new < big_time:
+                return detuning_ - small_det_
+            else:
+                return detuning_ + small_det_
+        # freq = lambda t: detuning_ + small_det_*(-1 )
     print("max. rabifreq: {:.4f} rad/fs or {:.4f} THz (1/ps)".format(rf(0),1000*rf(0)/(2*np.pi)))
     # plt.plot(t,np.array([freq(i) for i in t])*HBAR)
     # plt.show() 

@@ -168,13 +168,12 @@ def fm_factor(tau, area, detuning, small_detuning, dt=1, negative=0.0,n=20, max_
 
 def fm_energy(tau, area, detuning, small_detuning, dt=1,n=20, factor=0.3):
     energies = np.linspace(detuning - factor*np.abs(detuning),detuning + factor*np.abs(detuning),n)
-    print(energies)
     endvals = np.empty_like(energies)
     for i in tqdm.trange(len(energies)):
         _,x,_ = fm_pulsed_fortran(tau=tau, dt=dt, area=area, detuning=detuning, small_detuning=small_detuning, modulation_energy=energies[i])
         endvals[i] = x[-1,0].real
     ind = np.unravel_index(np.argmax(endvals), endvals.shape)
-    print("endvalue:{:.4f} at factor:{:.4f}".format(endvals[ind[0]], energies[ind[0]]))
+    print("endvalue:{:.4f} at energy:{:.4f}".format(endvals[ind[0]], energies[ind[0]]))
     plt.plot(energies,endvals)
     plt.xlabel("modulation_energy (meV)")
     plt.ylabel("final occupation")
@@ -183,6 +182,38 @@ def fm_energy(tau, area, detuning, small_detuning, dt=1,n=20, factor=0.3):
     plt.xlabel("modulation_energy - detuning1 (meV)")
     plt.ylabel("final occupation")
     plt.show()
+
+def fm_energy_area(tau, area, detuning, small_detuning, dt=1,n=20,n2=20, factor=0.3):
+    energies = np.linspace(np.abs(detuning)*0.8,np.abs(detuning) + factor*np.abs(detuning),n)
+    areas = np.linspace(0,area,n2)
+    x_ax = energies
+    y_ax = areas
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           _,x,_ = fm_pulsed_fortran(tau=tau, dt=dt, area=y_ax[i], detuning=detuning, small_detuning=small_detuning, modulation_energy=x_ax[j])
+           endvals[i,j] = x[-1,0].real
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    print("{}, (meV:) modulation_energy={:.4f}, area={:.4f}*np.pi".format(ind,x_ax[ind[1]],y_ax[ind[0]]/np.pi))
+    print("final occupation: {:.4f}".format(endvals[ind[0],ind[1]]))
+    plt.xlabel("modulation energy (mev)")
+    plt.ylabel("area/pi")
+    plt.ylim(0,area/np.pi)
+    plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
+    plt.plot(x_ax, (1/np.pi)*np.sqrt(2*np.pi*tau**2)*(1/HBAR)*np.sqrt(-detuning**2 + x_ax**2), 'r-')
+    plt.colorbar()
+    plt.show()
+    plt.xlabel("detuning sideband (mev)")
+    plt.ylabel("area/pi")
+    plt.ylim(0,area/np.pi)
+    plt.xlim(x_ax[0]+detuning,x_ax[-1]+detuning)
+    plt.pcolormesh(x_ax+detuning, y_ax/np.pi, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]]+detuning,y_ax[ind[0]]/np.pi, 'r.')
+    plt.plot(x_ax, (1/np.pi)*np.sqrt(2*np.pi*tau**2)*(1/HBAR)*np.sqrt(-detuning**2 + (x_ax-detuning)**2), 'r-')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax/np.pi, endvals
 
 def fm_search_optimum(tau, dt, area, detuning, small_detuning, n=10, percent=2):
     low = (100-percent)/100

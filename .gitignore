@@ -134,6 +134,9 @@ pics/
 # data file
 data.txt
 
+# vscode
+.vscode/
+
 # osx stuff
 .DS_Store
 .AppleDouble

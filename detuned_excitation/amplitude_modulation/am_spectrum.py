@@ -46,9 +46,12 @@ def am_spectrum(omega0=10, tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*
             # reduced_freq.append[fft_freqs[i]]
             # reduced_f.append[f[i]]
     #print("integral: {:.4f}, only zero peak: {:.4f}, area * ratio: {:.4f} pi".format(integral, integral_only_zero, (area/np.pi)*integral_only_zero/integral))
-    plt.plot(fft_freqs, np.abs(f))
+    plt.plot(-fft_freqs, np.abs(f))
     plt.xlabel("detuning in meV")
+    plt.xlim(-30,10)
     plt.show()
+    return -fft_freqs, np.abs(f)
 
 #am_spectrum(omega0=50, dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, detuning=-5.0, t02=-1800)
-am_spectrum(omega0=0, dt=1, tau1=100, tau2=100, area1=29.0*np.pi, area2=29.0*np.pi, detuning=-5.0, t02=-1800)
+# am_spectrum(omega0=0, dt=1, tau1=100, tau2=100, area1=29.0*np.pi, area2=29.0*np.pi, detuning=-5.0, t02=-1800)
+# am_spectrum(omega0=0, dt=1, tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0)

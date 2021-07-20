@@ -22,14 +22,15 @@ HBAR = 6.582119514e2  # meV fs
 # t2, x2, p_ = test_beat(dt=1, detuning=-9, tau1=3938.7755, area1=33.4694*np.pi, area2=33.4694*np.pi, tau2=3938.7755, t02=4726.5306)
 
 # weird 3pi case
-# t2, x2, p_ = test_beat(dt=1, detuning=-5, tau1=2920.7755, area1=35.4694*np.pi, area2=1.5*35.4694*np.pi, tau2=2920.7755, t02=1.5*2920.5306)
+# _, s, t2, _, _ = am_twocolor_fortran(dt=1, detuning=-5, tau1=2920.7755, area1=35.4694*np.pi, area2=1.5*35.4694*np.pi, tau2=2920.7755, t02=1.5*2920.5306)
 
-
-_, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=2405, tau2=3035, area1=3*np.pi, area2=0*np.pi, t02=0, detuning=0.0000, detuning2=0.0)
-
-
-# s = x2[:,0].real
-# p = x2[:,1]
+_, s, t2, _, _ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+# _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=2405, tau2=3035, area1=3*np.pi, area2=0*np.pi, t02=0, detuning=0.0000, detuning2=0.0)
+# _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=2405, tau2=3035, area1=1*np.pi, area2=4*np.pi, t02=0, detuning=0.2000, detuning2=-7)
+# _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=4000, tau2=4000, area1=0.91*50*np.pi, area2=2*np.pi, t02=0, detuning=-6, detuning2=-17.385)
+# _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=4000, tau2=4000, area1=5*np.pi, area2=0*np.pi, t02=0, detuning=-6, detuning2=-17.385)
+#s = x2[:,0].real
+#p = x2[:,1]
 t=t2
 # pulse1 =  p_.pulse1.get_envelope(t)
 # pulse2 =  p_.pulse2.get_envelope(t)
@@ -44,36 +45,39 @@ plt.plot(t,s)
 plt.ylim([-0.1,1.1])
 plt.show()
 
-area2 = 22*np.pi
-tau2 = 3035
-tau1 = 2400
-old_max = area2/np.sqrt(2*np.pi*tau2**2)
-new_area = old_max * 8 * tau1
-print(new_area/np.pi)
+# area2 = 22*np.pi
+# tau2 = 3035
+# tau1 = 2400
+# old_max = area2/np.sqrt(2*np.pi*tau2**2)
+# new_area = old_max * 8 * tau1
+# print(new_area/np.pi)
+
+
+
 #t, x, p = am_second_pulse_cw(dt=1,tau1=2400, area1=20*np.pi, area2=33*np.pi, detuning=-5.0)
 #plt.plot(t, x[:,0].real)
 # plt.ylim((0,1))
 #plt.show()
 
-tau1=2400
-area2 = 33*np.pi/(8*tau1)
-det = -7.5327
-area2 = 42.211*np.pi/(8*tau1)
-f, states, t, polars, energy_pulse2 = am_cw_fortran(dt=1,tau1=tau1, area1=20*np.pi, area2=area2, detuning=det, t02=0)
-plt.plot(t,states)
-plt.show()
+# tau1=2400
+# area2 = 33*np.pi/(8*tau1)
+# det = -7.5327
+# area2 = 42.211*np.pi/(8*tau1)
+# f, states, t, polars, energy_pulse2 = am_cw_fortran(dt=1,tau1=tau1, area1=20*np.pi, area2=area2, detuning=det, t02=0)
+# plt.plot(t,states)
+# plt.show()
 
-dets = np.linspace(-5,-11,50)
-areas_cw = np.linspace(0,60,50)*np.pi
-x,y,z = cw_detuning_area(dets, areas_cw, tau1=2400, area1=20*np.pi)
+# dets = np.linspace(-5,-11,50)
+# areas_cw = np.linspace(0,60,50)*np.pi
+# x,y,z = cw_detuning_area(dets, areas_cw, tau1=2400, area1=20*np.pi)
 
 # taus = np.linspace(1000,10000,50)
-# tau2s = 1*taus # + np.linspace(150,4000,50)
+# tau2s = 1.5*taus # + np.linspace(150,4000,50)
 # areas = np.linspace(0,40,50)*np.pi
-# areas2 = 0.5*areas
+# areas2 = areas
 # t02s = 0*taus
-# x,y,z = four_parameter_stability(taus, areas, tau2s, areas2, -5, t02s)
-# helper.save_colormap("data_m11_tau2_times1_5.csv", x/1000,y/np.pi,z)
+# x,y,z = four_parameter_stability(taus, areas, tau2s, areas2, -7.5, t02s)
+#helper.save_colormap("data_m11_tau2_times1_5.csv", x/1000,y/np.pi,z)
 
 # stability_factor2()
 

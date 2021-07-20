@@ -256,7 +256,7 @@ subroutine tls_fm(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, ou
 end subroutine tls_fm
 
 subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, tau1,&
-    tau2, e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, delta_e, t02)
+    tau2, e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, delta_e, t02, phase)
 ! ===============================
 ! solves two level system for two pulses with given parameters
 ! tau_0, e_energy, alpha, e0, t02 are pulse parameters
@@ -264,7 +264,7 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
     implicit none
     integer :: i=0
     Real*8,intent(in) :: t_0, t02
-    Real*8,intent(in) :: dt, tau1, e_energy1, a_chirp1, e01, delta_e, tau2, e_energy2, a_chirp2, e02
+    Real*8,intent(in) :: dt, tau1, e_energy1, a_chirp1, e01, delta_e, tau2, e_energy2, a_chirp2, e02, phase
     integer,intent(in) :: n_steps
     Real*8,intent(in):: in_state
     Complex*16,intent(in):: in_polar
@@ -300,8 +300,8 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
         omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*(w_start2-delta_e/HBAR &
-               + 0.5*a_chirp2*(t-t02))*(t-t02))/ sqrt(2.*pi*tau2 * tau2)
+        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-delta_e/HBAR &
+               + 0.5*a_chirp2*(t-t02))*(t-t02) + phase ))/ sqrt(2.*pi*tau2 * tau2)
         !phidot = w_start + a_chirp * t
         !delta = phidot - delta_e/HBAR
         call tls_eq(g, p, omm1+omm2, delta, k1r, k1i)
@@ -310,8 +310,8 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
         omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*(w_start2-delta_e/HBAR &
-               + 0.5*a_chirp2*(t-t02))*(t-t02))/ sqrt(2.*pi*tau2 * tau2)
+        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-delta_e/HBAR &
+               + 0.5*a_chirp2*(t-t02))*(t-t02) + phase ))/ sqrt(2.*pi*tau2 * tau2)
         !phidot = w_start + a_chirp * t
         !delta = phidot - delta_e/HBAR
         call tls_eq(g+k1r*0.5*dt, p+k1i*0.5*dt, omm1+omm2, delta, k2r, k2i)

@@ -1,4 +1,3 @@
-from detuned_excitation.amplitude_modulation.am import HBAR
 from detuned_excitation.frequency_modulation.fm import fm_pulsed_excitation, fm_rect_pulse
 from detuned_excitation.two_level_system.helper import export_csv
 import matplotlib.pyplot as plt
@@ -8,15 +7,19 @@ import numpy as np
 import os
 import tqdm
 
+HBAR = 6.582119514e2  # meV fs
 # t, x1, p1 = fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=-3, small_detuning=1.5)
 # t, x1, p1 = fm_rect_pulse(3000, dt=0.5, area=5*np.pi, detuning=-12, small_detuning=4)
 
-def blochsphere(tau, dt, area, detuning, small_detuning, low_z=0.97, mesh=False, rect=False, video=False, export_data=False, rect_modul=False):
+def blochsphere(tau, dt, area, detuning, small_detuning, extend=False, low_z=0.97, modulation_energy=None, mesh=False, rect=False, video=False, export_data=None, rect_modul=False, rect_modul_rf=False):
     t, x1, p1 = 0,0,0
     if not rect:
-        t, x1, p1 = fm_pulsed_excitation(tau=tau, dt=dt, area=area, detuning=detuning, small_detuning=small_detuning)
+        t, x1, p1 = fm_pulsed_excitation(tau=tau, dt=dt, area=area, detuning=detuning, small_detuning=small_detuning, modulation_energy=modulation_energy)
     if rect:
-        t, x1, p1 = fm_rect_pulse(t_0=tau/2, tau=tau, dt=dt, area=area, detuning=detuning, small_detuning=small_detuning, rect_modul=rect_modul)
+        t_0 = tau/2
+        if extend:
+            t_0 = tau
+        t, x1, p1 = fm_rect_pulse(t_0=t_0, tau=tau, dt=dt, area=area, detuning=detuning, small_detuning=small_detuning, rect_modul=rect_modul, rect_modul_rf=rect_modul_rf)
     
 
     plt.plot(t,x1[:,0].real)
@@ -59,7 +62,7 @@ def blochsphere(tau, dt, area, detuning, small_detuning, low_z=0.97, mesh=False,
     print(plt.cm.jet(x1[-1,0].real))
     print(x1[-1,0].real)
 
-    if export_data:
+    if export_data is not None:
         pulse1 =  [p1.get_envelope(t_) for t_ in t]
         norm = np.max(pulse1)
         pulse1 = np.array(pulse1)/norm
@@ -85,7 +88,7 @@ def blochsphere(tau, dt, area, detuning, small_detuning, low_z=0.97, mesh=False,
                 colors2.append(color_high)
         colors2 = np.array(colors2, dtype=np.int32)
         # write data to file
-        export_csv("data.csv", t, x1[:,0].real, bloch_x, bloch_y, bloch_z, rot_x, rot_y, rot_z, colors, colors2, pulse1, detunings)
+        export_csv(export_data, t, x1[:,0].real, bloch_x, bloch_y, bloch_z, rot_x, rot_y, rot_z, colors, colors2, pulse1, detunings)
     
 # rotation axis vector
 # ax.quiver(0,0,0,rot_x[0],rot_y[0],rot_z[0])
@@ -96,9 +99,7 @@ def blochsphere(tau, dt, area, detuning, small_detuning, low_z=0.97, mesh=False,
 
     plt.show()
 
-    if video: 
-        dir = os.path.dirname(__file__)
-        print(dir)
+    if video:
         j = 0
         fig = plt.figure()
         for i in tqdm.trange(1,len(t)-100,100):
@@ -122,8 +123,13 @@ def blochsphere(tau, dt, area, detuning, small_detuning, low_z=0.97, mesh=False,
             ax.plot(bloch_x[:i], bloch_y[:i], bloch_z[:i], color='tab:blue')
             ax.plot(bloch_x[i:i+50], bloch_y[i:i+50], bloch_z[i:i+50], color='tab:red')
             ax.quiver(0 ,0 ,0, rot_x[i+50], rot_y[i+50], rot_z[i+50], color='tab:orange')
-            plt.savefig(dir+"/pics/image_{}.png".format(j))
+            os.makedirs(os.path.dirname("pics/"), exist_ok=True)
+            plt.savefig("pics/image_{}.png".format(j))
 
-#blochsphere(3000, dt=0.5, area=5*np.pi, detuning=-12, small_detuning=4, rect=True, export_data=True)
-blochsphere(3500, dt=0.5, area=4.95*np.pi, detuning=-12, small_detuning=4, low_z=0.97, rect=True, export_data=True, rect_modul=True)
+#blochsphere(3000, dt=0.5, area=5*np.pi, detuning=-12, small_detuning=4, rect=True, export_data=False)
+# blochsphere(3500, rect_modul_rf=True, dt=0.5, area=4.95*np.pi, detuning=-12, small_detuning=4, low_z=0.97, rect=True, rect_modul=True, export_data="data.csv")
+# blochsphere(3190, rect_modul_rf=True, dt=0.5, area=4.45*np.pi, detuning=-12, small_detuning=4, low_z=0.97, rect=True, rect_modul=True, export_data="data.csv")
+# blochsphere(3500, rect_modul_rf=False, dt=0.5, area=4.95*np.pi, detuning=-12, small_detuning=4, low_z=0.97, rect=True, rect_modul=True)
+# blochsphere(dt=1, tau=4000, detuning=-6, small_detuning=2, modulation_energy=6.0843, area=6.2207*np.pi)
 #blochsphere(3000, dt=4, area=np.pi, detuning=0.3, small_detuning=0, mesh=True)
+# blochsphere(3500,mesh=True, dt=0.5, area=4.95*np.pi, detuning=-12, small_detuning=0, low_z=0.97, rect=True, rect_modul=True, export_data="data_12mev.csv")

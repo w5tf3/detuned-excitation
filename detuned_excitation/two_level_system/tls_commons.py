@@ -64,7 +64,7 @@ def two_level_chirp_a(t0=-4*400, dt=20, t_end=4*400, f_start=0, p_start=0, energ
     return f, p, states
 
 
-def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0):
+def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0, phase=0):
     """
     use the fortran implementation compiled with f2py to solve the diff. eqs. for two simultaneous pulses
     the default parameters show a chirped excitation with one pulse
@@ -73,7 +73,7 @@ def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400
     f, _, states, polars = tls.tls_twopulse(t_0=t0, dt=dt, n_steps=n_steps, in_state=f_start,
                                 in_polar=p_start, tau1=tau1, tau2=tau2, e_energy1=energy1,
                                 e_energy2=energy2, a_chirp1=chirp1, a_chirp2=chirp2,
-                                e01=area1, e02=area2, delta_e=0, t02=t02)
+                                e01=area1, e02=area2, delta_e=0, t02=t02, phase=phase)
     return f, polars, states
 
 
@@ -102,14 +102,14 @@ def two_level_fm(tau=10000,dt=4,detuning=-10,detuning_small=3,area=7*np.pi,fm_fr
     return f, p, states, polars
 
 
-def six_levels_mixed_polar(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, energy_2=1.0, e01=1*np.pi, e02=0*np.pi, t02=0.0, polar_m1=1.0, polar_m2=1.0, bx=0, bz=0, state_param=np.array([1, 0, 0, 0, 0, 0]), polarizations_param=np.zeros([15], dtype=complex), delta_B=-0.25, d0=0.25, d1=0.12, d2=0.05, delta_E=0.0):
+def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, energy_2=1.0, e01=1*np.pi, e02=0*np.pi, t02=0.0, polar_m1=1.0, polar_m2=1.0, bx=0, bz=0, state_param=np.array([1, 0, 0, 0, 0, 0]), polarizations_param=np.zeros([15], dtype=complex), delta_B=-0.25, d0=0.25, d1=0.12, d2=0.05, delta_E=0.0):
     """
     
     """
     t = np.arange(t_0, t_end, dt)
     n_steps = int(abs(t_end - t_0)/dt)
 
-    # light_polarization = 0 is purely negative circular polarized light, l_p = 1 purely positive cpl
+    # light_polarization = 1.0 is purely negative circular polarized light, l_p = 0.0 purely positive cpl
     # polar_p**2 + polar_m**2 = 1
     energy_1 += delta_E
     energy_2 += delta_E
@@ -140,6 +140,16 @@ def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
         k3 = equation(t_ + h / 2, x[i] + k2 * h / 2, pulse, delta_e)
         k4 = equation(t_ + h / 2, x[i] + k3 * h, pulse, delta_e)
         x[i + 1] = x[i] + (k1 + 2 * k2 + 2 * k3 + k4) * h / 6.
+    return t, np.array(x, dtype=complex)
+
+def euler(t0, x0, t1, h, equation, pulse, delta_e):
+    s = int((t1 - t0) / h)
+    n_ = len(x0)
+    t = np.linspace(t0, t1, s + 1)
+    x = np.zeros([s + 1, n_], dtype=complex)
+    x[0] = x0
+    for i in range(s):
+        x[i + 1] = x[i] + h * equation(i, x[i], pulse[i], delta_e)
     return t, np.array(x, dtype=complex)
 
 
@@ -175,6 +185,20 @@ def bloch_eq_general_rf(t, x, pulse_, _):
     # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
     e_f = pulse_.get_total(t)
     delta = pulse_.rf_freq(t)
+    f = x[0]
+    p = x[1]
+
+    _f = np.imag( np.conj(e_f) * p )
+    _p = 1j * delta * p + 0.5j * e_f * ( 1 - 2 * f ) 
+    return np.array( [_f, _p], dtype=complex )
+
+
+def bloch_eq_pulse_total(t, x, pulse_, rf_freq=0):
+    # eq. in frame rotating with a constant frequency
+    # if rf_freq=0, it is rotating with the system frequency
+    # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
+    e_f = pulse_
+    delta = rf_freq
     f = x[0]
     p = x[1]
 

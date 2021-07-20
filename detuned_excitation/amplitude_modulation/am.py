@@ -92,13 +92,15 @@ def am_twocolor(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detu
     #plt.show()
     return t, x, p_total
 
-def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None):
+def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0):
     """
     two pulses added together, forming a beat. t02 is the time difference between the two pulses.
     pulse 1 is centered around t=0, pulse 2 around t02.
     the energy of the first pulse is given as a parameter (detuning), the energy of the second pulse
     is calculated according to detuning - factor * max_rabi_freq (of pulse 1) * HBAR
     factor = 1 seems optimal. For some factor, we will have resonant excitation, so watch out if this is not wanted.
+    returns endvalue, dynamics, time, polarization dynamics, energy of second pulse
+
     """
     # take a time window which fits both pulses, even if one is centered around t != 0
     tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
@@ -117,7 +119,7 @@ def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.
     
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
-    f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02)
+    f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02, phase=phase)
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
@@ -423,7 +425,7 @@ def test_stability_t0(t0_arr, dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area
     plt.show()
     return endvals
 
-def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5,detuning2=False, t02=0, dt=1):
+def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5,detuning2=None, t02=0, dt=1):
     """
     test the stability of an excitation with two detuned pulses with respect to
     certain parameters
@@ -579,18 +581,37 @@ def stability_factor2(factors=np.linspace(-1,2,200), tau1=2400, tau2=3000, area1
 
 def cw_detuning_area(dets, areas_cw, tau1, area1, t02=0, dt=1):
     x_ax = dets
-    y_ax = areas_cw/(8*tau1)
+    y_ax = areas_cw/(8*tau1)  # the simulation length is 8*tau
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
            endvals[i,j],_,_,_,_ = am_cw_fortran(tau1=tau1, area1=area1, area2=y_ax[i], detuning=x_ax[j], t02=t02)
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
-    print("{}, det2:{:.4f}, area_cw:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y*(8*tau1/np.pi),endvals[ind[0],ind[1]]))
+    print("{}, det1:{:.4f}, area_cw:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y*(8*tau1/np.pi),endvals[ind[0],ind[1]]))
     plt.xlabel("detuning1")
     plt.ylabel("area_cw/pi")
     plt.pcolormesh(x_ax, y_ax*(8*tau1/np.pi), endvals, shading='auto')
     plt.plot(x_ax[ind[1]],y_ax[ind[0]]*(8*tau1/np.pi), 'r.')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax, endvals
+
+def detuning_area(det2s, area2s, det1, tau1, tau2, area1, t02=0, dt=1):
+    x_ax = det2s
+    y_ax = area2s
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           endvals[i,j],_,_,_,_ = am_twocolor_fortran(dt=dt, detuning=det1, tau1=tau1, tau2=tau2, area1=area1, area2=y_ax[i], detuning2=x_ax[j], t02=t02)
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
+    print("{}, det2:{:.4f}, area_cw:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,endvals[ind[0],ind[1]]))
+    plt.xlabel("detuning2")
+    plt.ylabel("area/pi")
+    plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
+    plt.plot(x_ax, (1/np.pi)*np.sqrt(2*np.pi*tau1**2)*(1/HBAR)*np.sqrt((det1- x_ax)**2-det1**2), 'r-')
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals
