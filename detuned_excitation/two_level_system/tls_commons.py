@@ -1,7 +1,7 @@
 from os import stat
 import numpy as np
 from detuned_excitation.two_level_system import tls
-from detuned_excitation.two_level_system import sixls
+from detuned_excitation.two_level_system import sixls, biexciton
 # print(tls.__doc__)
 
 
@@ -115,6 +115,16 @@ def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, 
     energy_2 += delta_E
     endstate,endpolar,states,polars = sixls.sixls_twopulse(t_0, dt, n_steps, state_param, polarizations_param, polar_m1, polar_m2, tau1, tau2, energy_1, energy_2, e01, e02, bx, bz, delta_B, d0, d1, d2, delta_E, t02)
     return t, states, endstate, endpolar, polars
+
+
+def biex_am_fortran(tau1=10000, tau2=1000, dt=1, det1=0, det2=0, area1=10*np.pi, area2=0*np.pi,t02=0, delta_b=8, delta_e=0, phase=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
+    tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
+    t0 = -4*tau
+    t1 = 4*tau
+    n_steps = int((t1 - t0) / dt) + 1
+    f,p,states,polars = biexciton.biex_twopulse(t0,dt,n_steps,in_state,in_polar,tau1,tau2,det1,det2,area1,area2,delta_b,delta_e,t02,phase)
+    t = np.linspace(t0,t1,len(states))
+    return t, f, p, states, polars
 
 
 def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):

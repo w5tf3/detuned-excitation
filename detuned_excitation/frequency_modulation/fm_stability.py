@@ -37,8 +37,6 @@ def fm_rect_area(areas, dt=4, tau=10000, detuning=-10, small_detuning=3, rect_mo
 def func(x,omega):
     return np.sin(x/omega)**2
 
-# fm_area()
-
 def omega_of_detune():
     det1 = np.linspace(-40,-10,50)
     det2 = np.linspace(4,15,50)
@@ -57,8 +55,6 @@ def omega_of_detune():
     plt.plot(x_ax[ind[1]],y_ax[ind[0]], 'r.')
     plt.colorbar()
     plt.show()
-
-#omega_of_detune()
 
 def fm_detuning(det1, det2, tau=10000, area=7*np.pi, dt=1):
     """
@@ -82,12 +78,6 @@ def fm_detuning(det1, det2, tau=10000, area=7*np.pi, dt=1):
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals
-
-# det1 = np.linspace(-60,-5,50)
-# det2 = np.linspace(0,20,50)
-# fm_detuning(det1, det2)
-# fm_pulsed_excitation(tau=10000, dt=1, area=7*np.pi, detuning=-6.58, small_detuning=18.22,plot=True)
-# fm_pulsed_excitation(tau=10000, dt=1, area=7*np.pi, detuning=-59.44, small_detuning=17.17,plot=True)
 
 def fm_areas(areas, taus, detuning=-20, small_detuning=5, dt=1, rect=False):
     """
@@ -115,10 +105,6 @@ def fm_areas(areas, taus, detuning=-20, small_detuning=5, dt=1, rect=False):
     plt.show()
     return x_ax, y_ax, endvals
 
-# areas = np.linspace(4,6*np.pi,20)
-# taus = np.linspace(3500,3800,3)
-# fm_area(areas, taus, detuning=-12, small_detuning=4, rect=True)
-
 def fm_area_det(areas, det2, tau=10000,detuning=-40,dt=1):
     """
     test the stability with regards to the two detunings
@@ -141,8 +127,6 @@ def fm_area_det(areas, det2, tau=10000,detuning=-40,dt=1):
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals
-
-# fm_area_det(areas,det2)
 
 def fm_factor(tau, area, detuning, small_detuning, dt=1, negative=0.0,n=20, max_factor=2):
     factors = np.linspace(negative,max_factor,n)
