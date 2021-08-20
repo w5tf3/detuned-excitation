@@ -45,6 +45,16 @@ plt.plot(t,s)
 plt.ylim([-0.1,1.1])
 plt.show()
 
+areas = np.linspace(22.65*0.9,22.65*1.1,50)*np.pi
+endvals = np.empty_like(areas)
+for i in range(len(areas)):
+    _,s,_,_,_ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=areas[i], area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+    endvals[i] = s[-1]
+plt.plot(areas/np.pi,endvals)
+plt.xlabel("area/pi")
+plt.ylabel("occupation")
+plt.show()
+
 # area2 = 22*np.pi
 # tau2 = 3035
 # tau1 = 2400
