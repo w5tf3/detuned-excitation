@@ -64,7 +64,7 @@ def two_level_chirp_a(t0=-4*400, dt=20, t_end=4*400, f_start=0, p_start=0, energ
     return f, p, states
 
 
-def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0, phase=0):
+def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0, phase=0, delta_e=0):
     """
     use the fortran implementation compiled with f2py to solve the diff. eqs. for two simultaneous pulses
     the default parameters show a chirped excitation with one pulse
@@ -73,7 +73,7 @@ def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400
     f, _, states, polars = tls.tls_twopulse(t_0=t0, dt=dt, n_steps=n_steps, in_state=f_start,
                                 in_polar=p_start, tau1=tau1, tau2=tau2, e_energy1=energy1,
                                 e_energy2=energy2, a_chirp1=chirp1, a_chirp2=chirp2,
-                                e01=area1, e02=area2, delta_e=0, t02=t02, phase=phase)
+                                e01=area1, e02=area2, delta_e=delta_e, t02=t02, phase=phase)
     return f, polars, states
 
 

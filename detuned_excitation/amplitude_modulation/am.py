@@ -92,7 +92,7 @@ def am_twocolor(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detu
     #plt.show()
     return t, x, p_total
 
-def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0):
+def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0, delta_e=0):
     """
     two pulses added together, forming a beat. t02 is the time difference between the two pulses.
     pulse 1 is centered around t=0, pulse 2 around t02.
@@ -119,7 +119,7 @@ def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.
     
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
-    f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02, phase=phase)
+    f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02, phase=phase, delta_e=delta_e)
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
