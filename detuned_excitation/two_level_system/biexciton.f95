@@ -78,6 +78,92 @@ subroutine biex_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_po
 end subroutine biex_twopulse
 
 
+subroutine biex_rectangle(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, &
+    tau, e_energy1, e_energy2, e01, e02, delta_b, delta_E)
+    ! ===============================
+    ! solves biexciton / three level system for two rectangle pulses with given parameters
+    ! rotating frame with energy of Ex is used.
+    ! both pulses have the same duration tau. 
+    ! ===============================
+    implicit none
+    integer :: i=0
+    Real*8,intent(in) :: t_0, delta_E
+    ! times are given in fs, energies in meV
+    ! e01, e02 are pulse areas
+    Real*8,intent(in) :: dt, tau, e_energy1, e_energy2, e01, e02, delta_B
+    integer,intent(in) :: n_steps
+    Real*8,intent(in):: in_state(3)
+    Complex*16,intent(in):: in_polar(3)
+    Real*8,intent(out):: out_state(3)
+    Complex*16,intent(out):: out_polar(3)
+    Real*8,intent(out):: out_states(n_steps,3)
+    Complex*16,intent(out):: out_polars(n_steps,3)
+    Real*8 :: HBAR
+    Real*8 :: E_x, E_b
+    Real*8 :: t, pi, w_1, w_2, phidot, phi
+    Real*8 :: k1r(3), k2r(3), k3r(3), k4r(3), energies(2)
+    Complex*16 :: k1i(3), k2i(3), k3i(3), k4i(3), omm, laser1, laser2
+    Complex*16 :: ii = (0.0,1.0)
+    ! constants
+    pi = 4.0d0*atan(1.0d0)
+    HBAR = 6.582119514E02  ! meV fs
+    out_state = in_state
+    
+    !g=in_state(1); x=in_state(2); b=in_state(3)
+    !gx=in_polar(1); gb=in_polar(2); xb=in_polar(3);
+    ! energies
+    E_x = delta_E
+    E_b = 2.*delta_E - delta_B
+    ! pulse parameters
+    w_1 = e_energy1 / HBAR
+    w_2 = e_energy2 / HBAR
+    ! steps for the loop 
+    !n_steps = int(abs(t_end - t_0)/dt) - 1
+
+    ! starting parameters
+    out_states(1,:) = in_state
+    out_polars(1,:) = in_polar
+    out_polar = in_polar
+
+    ! phidot in meV. actually this is phidot*HBAR
+    ! remember to substract phi (not phidot) in the exponential function of the electric field
+    phidot = E_x 
+    ! actually phi/t. if this is time dependent (i.e. modulated frequency and using a time dependent rot. frame), move inside the loop
+    phi = E_x / HBAR
+    energies(1)=E_x; energies(2)=E_b
+    do i = 0, n_steps - 2
+        ! take first rk4 step:
+        t = t_0 + i * dt
+        laser1 = 0
+        laser2 = 0
+        if (abs(t) < tau/2.0 ) then
+            laser1 = e01/tau * exp(-ii*(w_1-phi)*t)
+            laser2 = e02/tau * exp(-ii*(w_2-phi)*t)
+        end if
+        omm = laser1 + laser2
+        call biex_eq_rf(out_states(i+1,:), out_polars(i+1,:), phidot, omm, energies, k1r, k1i)
+
+        ! now t -> t+h/2
+        t = t_0 + i * dt + 0.5*dt
+        laser1 = 0
+        laser2 = 0
+        if (abs(t) < tau/2.0 ) then
+            laser1 = e01/tau * exp(-ii*(w_1-phi)*t)
+            laser2 = e02/tau * exp(-ii*(w_2-phi)*t)
+        end if
+        omm = laser1 + laser2
+        call biex_eq_rf(out_states(i+1,:)+0.5*dt*k1r, out_polars(i+1,:)+0.5*dt*k1i, phidot, omm, energies, k2r, k2i)
+        call biex_eq_rf(out_states(i+1,:)+0.5*dt*k2r, out_polars(i+1,:)+0.5*dt*k2i, phidot,  omm, energies, k3r, k3i)
+        call biex_eq_rf(out_states(i+1,:)+dt*k3r, out_polars(i+1,:)+dt*k3i, phidot, omm, energies, k4r, k4i)
+        out_states(i+2,:) = out_states(i+1,:) + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
+        out_polars(i+2,:) = out_polars(i+1,:) + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
+    end do
+    out_state = out_states(n_steps,:)
+    out_polar = out_polars(n_steps,:)
+
+end subroutine biex_rectangle
+
+
 subroutine biex_eq_rf(in_state, in_polar, phidot, omega_x, energies, out_state, out_polar)
     implicit none
     ! equations for biexciton system in a constant rotating frame. 

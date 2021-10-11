@@ -123,7 +123,7 @@ def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
-def am_second_pulse_cw(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, factor=1.0, factor2=1.0, detuning2=None, rf_energy=None):
+def am_second_pulse_cw(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, factor=1.0, factor2=1.0, detuning2=None, rf_energy=None, n_tau=4):
     """
     python version slower than fortran
     rf_energy: set the energy of the rotating frame. default uses the detuning as rotating frame energy,
@@ -131,8 +131,8 @@ def am_second_pulse_cw(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning
     the smoothest dynamics on the bloch sphere. 
     """
     tau = tau1
-    t0 = -4*tau
-    t1 = 4*tau
+    t0 = -n_tau*tau
+    t1 = n_tau*tau
     s = int((t1 - t0) / dt)
     t = np.linspace(t0, t1, s + 1)
     _t0=0
@@ -151,7 +151,7 @@ def am_second_pulse_cw(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning
     
     e_pulse2 = energy_pulse2 - rf_energy
     # now, the second pulse is just on as cw during the whole simulation, ie 8*tau
-    p2 = pulse.RectanglePulse(tau=8*tau1, e_start=e_pulse2, w_gain=0, e0=area2, t0=0)
+    p2 = pulse.RectanglePulse(tau=2*n_tau*t1, e_start=e_pulse2, w_gain=0, e0=area2, t0=0)
     print("energy p1:  {:.4f} mev".format(detuning))
     print("rf_max: {:.4f}".format(rf_max))
     print("energy p2: {:.4f}meV".format(energy_pulse2))
@@ -162,13 +162,13 @@ def am_second_pulse_cw(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq_constrf, p_total, rf_energy/HBAR)
     return t, x, p_total
 
-def am_cw_fortran(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, factor=1.0, factor2=1.0, detuning2=None, t02=0):
+def am_cw_fortran(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, factor=1.0, factor2=1.0, detuning2=None, t02=0, n_tau=4):
     """
     the duration of the simulation is 8*tau1: from -4*tau1 to 4*tau1
     """
     # take a time window which fits both pulses, even if one is centered around t != 0
     tau = tau1 
-    t0 = 4*tau
+    t0 = n_tau*tau
     # t = np.arange(-t0,t0,dt)
 
     # here we calculate the laser frequency for the second pulse
@@ -545,7 +545,7 @@ def four_parameter_stability(taus, areas, tau2s, area2s, detuning1, t02s, dt=4):
            endvals[i,j],_,_,_,_ = am_twocolor_fortran(tau2=tau2s[j], tau1=x_ax[j], area2=area2s[i], area1=y_ax[i], t02=t02s[j], detuning=detuning1, dt=dt)
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
-    print("{}, tau1={:.4f}, area1={:.4f}*np.pi, area2={:.4f}*np.pi, tau2={:.4f}, t02={:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,max_y/np.pi, tau2s[ind[1]], t02s[ind[1]], endvals[ind[0],ind[1]]))
+    print("{}, tau1={:.4f}, area1={:.4f}*np.pi, area2={:.4f}*np.pi, tau2={:.4f}, t02={:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,area2s[ind[0]]/np.pi, tau2s[ind[1]], t02s[ind[1]], endvals[ind[0],ind[1]]))
     plt.xlabel("tau1")
     plt.ylabel("areas/np.pi")
     plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')

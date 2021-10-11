@@ -127,6 +127,15 @@ def biex_am_fortran(tau1=10000, tau2=1000, dt=1, det1=0, det2=0, area1=10*np.pi,
     return t, f, p, states, polars
 
 
+def biex_rect(tau, det1, det2, area1, area2, dt=5, delta_b=8, delta_e=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
+    t0 = -0.6*tau
+    t1 = 0.6*tau
+    n_steps = int((t1 - t0) / dt) + 1
+    f,p,states,polars = biexciton.biex_rectangle(t0,dt,n_steps,in_state,in_polar,tau,det1,det2,area1,area2,delta_b,delta_e)
+    t = np.linspace(t0,t1,len(states))
+    return t, f, p, states, polars
+
+
 def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
     """
     runge kutta 4 to solve differential equations.
