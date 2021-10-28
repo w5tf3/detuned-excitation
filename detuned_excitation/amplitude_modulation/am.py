@@ -187,6 +187,46 @@ def am_cw_fortran(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, 
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
+def am_first_cw(tau1=10000, tau2=2000, dt=5, e01=1.0, area2=10*np.pi, detuning=-5, factor=1.0, factor2=1.0, detuning2=None, rf_energy=None, onoff=100):
+    """
+    python version: first pulse is a smooth (sigmoid on/off) rectangle pulse
+    onoff is the swtich time in fs
+    e01 is its amplitude in meV, i.e., the amplitude Omega0 = e01/hbar 
+    rf_energy: set the energy of the rotating frame. default uses the detuning as rotating frame energy,
+    so the energy of the first pulse is 'reduced' to zero. this option also seems to deliver
+    the smoothest dynamics on the bloch sphere. 
+    """
+    # tau = tau2
+    t0 = -1.5*tau1/2
+    t1 = 1.5*tau1/2
+    s = int((t1 - t0) / dt)
+    t = np.linspace(t0, t1, s + 1)
+    _t0=0
+    if rf_energy is None:
+        rf_energy = detuning
+    # rotating frame with "detuning", i.e. frequency (energy) of pulse 1 would be e_pulse1 = 0
+    e_pulse1 = detuning - rf_energy
+    
+    p1 = pulse.SmoothRectangle(tau=tau1, e_start=e_pulse1, w_gain=0, e0=e01/HBAR, t0=0, alpha_onoff=onoff)
+    rf_max = np.sqrt(factor2*(e01/HBAR)**2 + (detuning/HBAR)**2)  # rabi freq
+    
+    energy_pulse2 = detuning - HBAR*rf_max * factor
+    if detuning2 is not None:
+        energy_pulse2 = detuning2
+    
+    e_pulse2 = energy_pulse2 - rf_energy
+    # now, the second pulse is just on as cw during the whole simulation, ie 8*tau
+    p2 = pulse.Pulse(tau=tau2, e_start=e_pulse2, w_gain=0, e0=area2, t0=0)
+    print("energy p1:  {:.4f} mev".format(detuning))
+    print("hbar*rf_max: {:.4f}".format(rf_max*HBAR))
+    print("energy p2: {:.4f}meV".format(energy_pulse2))
+    # print("omega1: {:.4f}, omega2: {:.4f}".format(p1.w_start, p2.w_start))
+
+    p_total = pulse.MultiPulse(p1, p2)
+    x0 = np.array([0,0],dtype=complex)
+    _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq_constrf, p_total, rf_energy/HBAR)
+    return t, x, p_total
+
 def test_beat_special_frame(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, phase=0):
     # take a time window which fits both pulses, even if one is centered around t != 0
     tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
