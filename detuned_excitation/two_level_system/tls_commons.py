@@ -157,7 +157,7 @@ def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
         k1 = equation(t_, x[i], pulse, delta_e)
         k2 = equation(t_ + h / 2, x[i] + k1 * h / 2, pulse, delta_e)
         k3 = equation(t_ + h / 2, x[i] + k2 * h / 2, pulse, delta_e)
-        k4 = equation(t_ + h / 2, x[i] + k3 * h, pulse, delta_e)
+        k4 = equation(t_ + h, x[i] + k3 * h, pulse, delta_e)
         x[i + 1] = x[i] + (k1 + 2 * k2 + 2 * k3 + k4) * h / 6.
     return t, np.array(x, dtype=complex)
 

@@ -92,6 +92,11 @@ subroutine sixls_rk4(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar,
                          k2r, k2i)
         call sixls_eq_rf(out_states(i+1,:)+0.5*dt*k2r, out_polars(i+1,:)+0.5*dt*k2i, phidot,  omm, omp, energies, d1, d2, gex, ghx,&
                          k3r, k3i)
+        ! now t -> t+h
+        t = t_0 + i * dt + dt
+        omp = polar_p * e0 * exp(-0.5 * (t/tau)**2.) * exp(-ii*(w_start-phi + 0.5*a_chirp*t)*t) / sqrt(2.*pi*tau * tau_0) 
+        omm = polar_m * e0 * exp(-0.5 * (t/tau)**2.) * exp(-ii*(w_start-phi + 0.5*a_chirp*t)*t) / sqrt(2.*pi*tau * tau_0) 
+        
         call sixls_eq_rf(out_states(i+1,:)+dt*k3r, out_polars(i+1,:)+dt*k3i, phidot, omm, omp, energies, d1, d2, gex, ghx, k4r, k4i)
         out_states(i+2,:) = out_states(i+1,:) + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
         out_polars(i+2,:) = out_polars(i+1,:) + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
@@ -205,6 +210,12 @@ subroutine sixls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_p
                          k2r, k2i)
         call sixls_eq_rf(out_states(i+1,:)+0.5*dt*k2r, out_polars(i+1,:)+0.5*dt*k2i, phidot,  omm, omp, energies, d1, d2, gex, ghx,&
                          k3r, k3i)
+        ! now t -> t+h
+        t = t_0 + i * dt + dt
+        laser1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_1-phi)*t)/ sqrt(2.*pi*tau1 * tau1)
+        laser2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*(w_2-phi)*(t-t02))/ sqrt(2.*pi*tau2 * tau2)
+        omp = pp1*laser1 + pp2*laser2
+        omm = pm1*laser1 + pm2*laser2
         call sixls_eq_rf(out_states(i+1,:)+dt*k3r, out_polars(i+1,:)+dt*k3i, phidot, omm, omp, energies, d1, d2, gex, ghx, k4r, k4i)
         out_states(i+2,:) = out_states(i+1,:) + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
         out_polars(i+2,:) = out_polars(i+1,:) + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
