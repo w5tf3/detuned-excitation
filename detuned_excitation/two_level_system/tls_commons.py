@@ -135,6 +135,18 @@ def biex_rect(tau, det1, det2, area1, area2, dt=5, delta_b=8, delta_e=0, in_stat
     t = np.linspace(t0,t1,len(states))
     return t, f, p, states, polars
 
+def tls_arbitrary_pulse(t0, e0, n_steps, dt=3, delta_e=0, in_state=0, in_polar=0j, strict=True):
+    """
+    ### Parameters 
+    e0: array with electric field, complex. has to be of length 2*len(out_size)-1, where out_size is the (desired) size of the result array
+    n_steps: just for checking the input
+    dt: time step
+    """
+    if strict and 2*n_steps-1 != len(e0):
+        print("size of e0 does not match step count")
+        exit(1)
+    f,p,states,polars = tls.tls_arbitrary_field(t0,dt,in_state,in_polar,e0,delta_e,n_steps)
+    return f, p, states, polars
 
 def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
     """

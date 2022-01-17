@@ -86,11 +86,12 @@ def prepare_e_field(tau1, tau2, t02, area1, area2, detuning1, detuning2):
     return tau1, tau2, t02, area1, area2, detuning1, detuning2, batch
     
 
-def tls_phonons(tau1, tau2, t02, area1, area2, detuning1, detuning2, timestep=0.003, phonons=True, phonon_scaling=1.0, temp=0.0, qd_width=4.0, num_q=150, t_continue=0.0, device=torch.device('cpu')):
+def tls_phonons(tau1, tau2, t02, area1, area2, detuning1, detuning2, timestep=0.003, phonons=True, phonon_scaling=1.0, temp=0.0, qd_width=4.0, num_q=150, t_continue=0.0, device='cpu'):
     """
     times are in picoseconds, areas in units of pi
     if phonons=False: num_q = 2, temp = 0.0, phonon_scaling = 0.0
     """
+    device = torch.device(device)
     print("using device: {}".format(device))
 
     # simulation specific stuff

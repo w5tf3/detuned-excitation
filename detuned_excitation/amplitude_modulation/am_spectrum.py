@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import fft
+from numpy.fft.helper import fftfreq
 from detuned_excitation.amplitude_modulation.am import get_detuning2
+from detuned_excitation.two_level_system.helper import nm_to_mev, mev_to_nm
 
 HBAR = 6.582119514e2  # meV fs
 
@@ -33,7 +36,7 @@ def am_spectrum(omega0=10, tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*
     # now fft the pulse
     f = np.fft.fft(pulse_total)
     f = np.fft.fftshift(f)
-    fft_freqs = 2*np.pi * HBAR * np.fft.fftfreq(len(pulse_total))
+    fft_freqs = 2*np.pi * HBAR * np.fft.fftfreq(len(pulse_total),d=dt)
     fft_freqs = np.fft.fftshift(fft_freqs)
     #df = np.abs(fft_freqs[0]-fft_freqs[1])
     #integral = np.sum(np.abs(f)*df)
@@ -48,10 +51,10 @@ def am_spectrum(omega0=10, tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*
     #print("integral: {:.4f}, only zero peak: {:.4f}, area * ratio: {:.4f} pi".format(integral, integral_only_zero, (area/np.pi)*integral_only_zero/integral))
     plt.plot(-fft_freqs, np.abs(f))
     plt.xlabel("detuning in meV")
-    plt.xlim(-30,10)
+    plt.xlim(-30,30)
     plt.show()
     return -fft_freqs, np.abs(f)
 
-#am_spectrum(omega0=50, dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, detuning=-5.0, t02=-1800)
+# am_spectrum(omega0=50, dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, detuning=-5.0, t02=-1800)
 # am_spectrum(omega0=0, dt=1, tau1=100, tau2=100, area1=29.0*np.pi, area2=29.0*np.pi, detuning=-5.0, t02=-1800)
-# am_spectrum(omega0=0, dt=1, tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0)
+am_spectrum(omega0=0, dt=3, tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0)

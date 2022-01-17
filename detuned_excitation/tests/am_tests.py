@@ -24,14 +24,16 @@ HBAR = 6.582119514e2  # meV fs
 # weird 3pi case
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, detuning=-5, tau1=2920.7755, area1=35.4694*np.pi, area2=1.5*35.4694*np.pi, tau2=2920.7755, t02=1.5*2920.5306)
 
-_, s, t2, _, _ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+# _, s, t2, _, _ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+# _, s2, t2, _, _ = am_twocolor_fortran(phase=np.pi/2,tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=2405, tau2=3035, area1=3*np.pi, area2=0*np.pi, t02=0, detuning=0.0000, detuning2=0.0)
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=2405, tau2=3035, area1=1*np.pi, area2=4*np.pi, t02=0, detuning=0.2000, detuning2=-7)
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=4000, tau2=4000, area1=0.91*50*np.pi, area2=2*np.pi, t02=0, detuning=-6, detuning2=-17.385)
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=4000, tau2=4000, area1=5*np.pi, area2=0*np.pi, t02=0, detuning=-6, detuning2=-17.385)
 #s = x2[:,0].real
 #p = x2[:,1]
-t=t2
+# t=t2
 # pulse1 =  p_.pulse1.get_envelope(t)
 # pulse2 =  p_.pulse2.get_envelope(t)
 # norm = np.max(np.concatenate((pulse1,pulse2)))
@@ -39,21 +41,46 @@ t=t2
 # pulse2 = pulse2/norm
 
 # helper.export_csv("data_twocolor2.csv", t, s,pulse1, pulse2, pulse1+pulse2)
-plt.plot(t,s)
-# plt.plot(t3, x3[:,0].real)
-# plt.plot(t,np.real(p), 'r-')
-plt.ylim([-0.1,1.1])
+# plt.plot(t,s)
+# plt.plot(t,s2, 'r-')
+# # plt.plot(t3, x3[:,0].real)
+# # plt.plot(t,np.real(p), 'r-')
+# plt.ylim([-0.1,1.1])
+# plt.show()
+
+t,x,p = am_twocolor(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=0, detuning=-8.0000, detuning2=-19.1630)
+plt.plot(t,x[:,0].real)
+plt.show()
+plt.plot(t,x[:,1].real, 'r-')
+plt.plot(t,x[:,1].imag, 'b-')
+plt.show()
+t,x,_ = am_twocolor(tau1=3040, tau2=3040, area1=1*np.pi, area2=0, t02=0, detuning=0, detuning2=0)
+plt.plot(t,x[:,0].real)
+plt.show()
+plt.plot(t,x[:,1].real, 'r-')
+plt.plot(t,x[:,1].imag, 'b-')
 plt.show()
 
-areas = np.linspace(22.65*0.9,22.65*1.1,50)*np.pi
-endvals = np.empty_like(areas)
-for i in range(len(areas)):
-    _,s,_,_,_ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=areas[i], area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
-    endvals[i] = s[-1]
-plt.plot(areas/np.pi,endvals)
-plt.xlabel("area/pi")
-plt.ylabel("occupation")
-plt.show()
+# phases = np.linspace(0,2*np.pi,50)
+# endvals = np.empty_like(phases)
+# for i in tqdm.trange(len(phases)):
+#     # _, s, t2, _, _ = am_twocolor_fortran(phase=phases[i],tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+#     t,x,p = am_twocolor(phase=phases[i],tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+#     endvals[i] = s[-1]
+
+# plt.plot(phases/np.pi,endvals)
+# plt.ylim(-0.1,1.1)
+# plt.show()
+
+# areas = np.linspace(22.65*0.9,22.65*1.1,50)*np.pi
+# endvals = np.empty_like(areas)
+# for i in range(len(areas)):
+    # _,s,_,_,_ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=areas[i], area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+    # endvals[i] = s[-1]
+# plt.plot(areas/np.pi,endvals)
+# plt.xlabel("area/pi")
+# plt.ylabel("occupation")
+# plt.show()
 
 # area2 = 22*np.pi
 # tau2 = 3035
@@ -62,12 +89,20 @@ plt.show()
 # new_area = old_max * 8 * tau1
 # print(new_area/np.pi)
 
+# t = np.linspace(-4000,4000,300)
+# y = pulse.SmoothRectangle(4000,0,e0=2)
+# plt.plot(t,y.get_envelope(t))
+# plt.show()
 
+t, x, p = am_first_cw(dt=4, tau1=15000, tau2=3000, e01=3, area2=25*np.pi, detuning=-4.0,onoff=500)
+plt.plot(t, x[:,0].real)
+plt.ylim((0,1))
+plt.show()
 
-#t, x, p = am_second_pulse_cw(dt=1,tau1=2400, area1=20*np.pi, area2=33*np.pi, detuning=-5.0)
-#plt.plot(t, x[:,0].real)
+# t, x, p = am_second_pulse_cw(n_tau=10,dt=4,tau1=2400, area1=0*np.pi, area2=10/8*33*np.pi, detuning=-5.0, detuning2=-5)
+# plt.plot(t, x[:,0].real)
 # plt.ylim((0,1))
-#plt.show()
+# plt.show()
 
 # tau1=2400
 # area2 = 33*np.pi/(8*tau1)

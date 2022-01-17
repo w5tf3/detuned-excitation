@@ -1,6 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+HBAR = 6.582119514e2  # meV fs
+c_light = 299.792  # nm/fs
+
+def nm_to_mev(lambda_light):
+    return HBAR * 2*np.pi*c_light / lambda_light
+
+def mev_to_nm(energy_light):
+    return HBAR * 2*np.pi*c_light / energy_light
+
 def export_csv(filename, *arg, precision=4, delimit=','):
     """
     Exportiert Arrays als .csv Datei
