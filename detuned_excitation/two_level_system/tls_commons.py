@@ -102,7 +102,7 @@ def two_level_fm(tau=10000,dt=4,detuning=-10,detuning_small=3,area=7*np.pi,fm_fr
     return f, p, states, polars
 
 
-def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, energy_2=1.0, e01=1*np.pi, e02=0*np.pi, t02=0.0, polar_m1=1.0, polar_m2=1.0, bx=0, bz=0, state_param=np.array([1, 0, 0, 0, 0, 0]), polarizations_param=np.zeros([15], dtype=complex), delta_B=-0.25, d0=0.25, d1=0.12, d2=0.05, delta_E=0.0):
+def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, energy_2=1.0, e01=1*np.pi, e02=0*np.pi, t02=0.0, polar_m1=1.0, polar_m2=1.0, bx=0, bz=0, state_param=np.array([1, 0, 0, 0, 0, 0]), polarizations_param=np.zeros([15], dtype=complex), delta_b=-0.25, d0=0.25, d1=0.12, d2=0.05, delta_e=0.0):
     """
     
     """
@@ -111,20 +111,19 @@ def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, 
 
     # light_polarization = 1.0 is purely negative circular polarized light, l_p = 0.0 purely positive cpl
     # polar_p**2 + polar_m**2 = 1
-    energy_1 += delta_E
-    energy_2 += delta_E
-    endstate,endpolar,states,polars = sixls.sixls_twopulse(t_0, dt, n_steps, state_param, polarizations_param, polar_m1, polar_m2, tau1, tau2, energy_1, energy_2, e01, e02, bx, bz, delta_B, d0, d1, d2, delta_E, t02)
+    energy_1 += delta_e
+    energy_2 += delta_e
+    endstate,endpolar,states,polars = sixls.sixls_twopulse(t_0, dt, n_steps, state_param, polarizations_param, polar_m1, polar_m2, tau1, tau2, energy_1, energy_2, e01, e02, bx, bz, delta_b, d0, d1, d2, delta_e, t02)
     return t, states, endstate, endpolar, polars
 
 
-def biex_am_fortran(tau1=10000, tau2=1000, dt=1, det1=0, det2=0, area1=10*np.pi, area2=0*np.pi,t02=0, delta_b=8, delta_e=0, phase=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
-    tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
-    t0 = -4*tau
-    t1 = 4*tau
-    n_steps = int((t1 - t0) / dt) + 1
+def biex_am_fortran(t0, t_end, tau1=10000, tau2=1000, dt=1, det1=0, det2=0, area1=10*np.pi, area2=0*np.pi,t02=0, delta_b=8, delta_e=0, phase=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
+    #tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
+    #t0 = -4*tau
+    #t1 = 4*tau
+    n_steps = int(abs(t_end-t0)/dt)+1
     f,p,states,polars = biexciton.biex_twopulse(t0,dt,n_steps,in_state,in_polar,tau1,tau2,det1,det2,area1,area2,delta_b,delta_e,t02,phase)
-    t = np.linspace(t0,t1,len(states))
-    return t, f, p, states, polars
+    return f, p, states, polars
 
 
 def biex_rect(tau, det1, det2, area1, area2, dt=5, delta_b=8, delta_e=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):

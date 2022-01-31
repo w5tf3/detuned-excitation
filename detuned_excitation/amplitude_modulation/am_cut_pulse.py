@@ -50,7 +50,7 @@ def cut_super(dt=5, tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, 
 # rf_max = np.sqrt(max_r**2 + (detuning1/HBAR)**2)
 # print("detuning2: {:.5f}".format(detuning1 - HBAR*rf_max))
 
-def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, fwhm=20, detuning1=-5, detuning2=-10, cut_width1=2, cut_width2=2, factor1=1.0, factor2=1.0, dt=4, do_plot=False, gauss=False):
+def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, fwhm=20, detuning1=-5, detuning2=-10, cut_width1=2, cut_width2=2, factor1=1.0, factor2=1.0, dt=4, do_plot=False, gauss=False, background=None):
     """
     ### Prameters:
     area: 'area' of the whole pulse
@@ -93,6 +93,13 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, fwhm=20, detuni
     mask1 = factor1 * mask1/np.max(mask1)
     mask2 = factor2 * mask2/np.max(mask2)
     mask = mask1 + mask2
+
+    if background != None:
+        for i in range(len(fft_freqs)):
+            if fft_freqs[i] < detuning1 and fft_freqs[i] > detuning2:
+                if mask[i] < background:
+                    mask[i] = background
+
     # temporal representation
     pulse_t = np.fft.ifft(spectrum)
     pulses_t = np.fft.ifft(mask*spectrum)
@@ -144,13 +151,15 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, fwhm=20, detuni
 # plt.plot(t, np.abs(pulse_t))
 # plt.show()
 cut_pulses(gauss=True, do_plot=True, area=300*np.pi, center=-20, detuning1=-5, detuning2=-13.6735, cut_width1=0.4, cut_width2=0.4, factor2=0.3796)
-cut_pulses(do_plot=True, gauss=False, area=300*np.pi, center=-20, detuning1=-5, detuning2=-13.6735, cut_width1=1.2, cut_width2=1.2, factor2=0.2)
+cut_pulses(background=0.05, gauss=True, do_plot=True, area=300*np.pi, center=-20, detuning1=-5, detuning2=-13.0204, cut_width1=0.4, cut_width2=0.4, factor2=0.5429)
+
+# cut_pulses(do_plot=True, gauss=False, area=300*np.pi, center=-20, detuning1=-5, detuning2=-13.6735, cut_width1=1.2, cut_width2=1.2, factor2=0.2)
 
 
-def use_cut_pulse(dt, area=120*np.pi, center=-20,detuning1=-5, detuning2=-11, cut_width1=0.8, cut_width2=0.8, factor2=0.4, gauss=True):
+def use_cut_pulse(dt, area=120*np.pi, center=-20,detuning1=-5, detuning2=-11, cut_width1=0.8, cut_width2=0.8, factor2=0.4, gauss=True, background=None):
     #t0 = 5*tau
     #t = np.arange(-t0,t0+dt,dt)
-    t, pulse = cut_pulses(area=area, dt=dt/2, do_plot=False, center=center,detuning1=detuning1, detuning2=detuning2, cut_width1=cut_width1, cut_width2=cut_width2, factor2=factor2, gauss=gauss)
+    t, pulse = cut_pulses(area=area, dt=dt/2, do_plot=False, center=center,detuning1=detuning1, detuning2=detuning2, cut_width1=cut_width1, cut_width2=cut_width2, factor2=factor2, gauss=gauss, background=background)
     n_steps = int((len(t)-2)/2)
     # plt.plot(t,np.abs(pulse))
     # plt.show()
@@ -174,7 +183,7 @@ def use_cut_pulse(dt, area=120*np.pi, center=-20,detuning1=-5, detuning2=-11, cu
 # plt.plot(t,s)
 # plt.show()
 
-def det2_factor2(n=50, dt=8, area=900*np.pi, center=20, detuning1=-5, cut_width1=0.8, cut_width2=0.8, gauss=True):
+def det2_factor2(n=50, dt=8, area=900*np.pi, center=20, detuning1=-5, cut_width1=0.8, cut_width2=0.8, gauss=True, background=None):
     detuning2 = np.linspace(-10,-14,n)
     factor2 = np.linspace(0.2,1,n)  #factor2=np.linspace(0,1,50)
     x_ax = detuning2
@@ -182,7 +191,7 @@ def det2_factor2(n=50, dt=8, area=900*np.pi, center=20, detuning1=-5, cut_width1
     endvals = np.zeros([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-            _,_,endvals[i,j] = use_cut_pulse(gauss=gauss, dt=dt, area=area, center=center, detuning1=detuning1, detuning2=x_ax[j], cut_width1=cut_width1, cut_width2=cut_width2, factor2=y_ax[i])
+            _,_,endvals[i,j] = use_cut_pulse(background=background, gauss=gauss, dt=dt, area=area, center=center, detuning1=detuning1, detuning2=x_ax[j], cut_width1=cut_width1, cut_width2=cut_width2, factor2=y_ax[i])
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
     print("{}, detuning2:{:.4f}, factor2:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y,endvals[ind[0],ind[1]]))
@@ -194,8 +203,12 @@ def det2_factor2(n=50, dt=8, area=900*np.pi, center=20, detuning1=-5, cut_width1
     plt.show()
     return x_ax, y_ax, endvals
 
-det2_factor2(area=300*np.pi, center=-20, detuning1=-5, cut_width1=0.4, cut_width2=0.4)
-det2_factor2(gauss=False, area=300*np.pi, center=-20, detuning1=-5, cut_width1=1.2, cut_width2=1.2)
+x,y,z = det2_factor2(background=0.2,area=300*np.pi, center=-20, detuning1=-5, cut_width1=0.4, cut_width2=0.4)
+plt.xlabel("transmission_2")
+plt.ylabel("exciton occupation")
+plt.plot(y, z[:,48])
+plt.show()
+# det2_factor2(gauss=False, area=300*np.pi, center=-20, detuning1=-5, cut_width1=1.2, cut_width2=1.2)
 
 
 def det2_area(dt=8, center=-20, detuning1=-5, cut_width1=0.8, cut_width2=0.8, factor2=0.5):

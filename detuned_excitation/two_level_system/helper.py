@@ -108,3 +108,4 @@ def energies(bz, delta_B=-d0, delta_E=0.0, d0=0.25):
     E_dm = delta_E - d0/2 + mu_b*bz/2 * (3*g_hz + g_ez)
     E_b  = 2*delta_E - delta_B
     return E_dp, E_bp, E_bm, E_dm, E_b
+    

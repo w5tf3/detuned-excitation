@@ -41,6 +41,8 @@ def test_chirp_a():
     plt.plot(t,states)
     plt.show()
 
+test_chirp_a()
+
 def test_twopulse():
     """
     directly specify a chirp parameter a in 1/ps^2 
