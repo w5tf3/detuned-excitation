@@ -117,12 +117,12 @@ def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, 
     return t, states, endstate, endpolar, polars
 
 
-def biex_am_fortran(t0, t_end, tau1=10000, tau2=1000, dt=1, det1=0, det2=0, area1=10*np.pi, area2=0*np.pi,t02=0, delta_b=8, delta_e=0, phase=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
+def biex_am_fortran(t0, t_end, tau1=10000, tau2=1000, alpha=0, dt=1, det1=0, det2=0, area1=10*np.pi, area2=0*np.pi,t02=0, delta_b=8, delta_e=0, phase=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
     #tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
     #t0 = -4*tau
     #t1 = 4*tau
     n_steps = int(abs(t_end-t0)/dt)+1
-    f,p,states,polars = biexciton.biex_twopulse(t0,dt,n_steps,in_state,in_polar,tau1,tau2,det1,det2,area1,area2,delta_b,delta_e,t02,phase)
+    f,p,states,polars = biexciton.biex_twopulse(t0,dt,n_steps,in_state,in_polar,tau1,tau2,det1,det2,area1,area2,delta_b,delta_e,t02,phase,alpha)
     return f, p, states, polars
 
 

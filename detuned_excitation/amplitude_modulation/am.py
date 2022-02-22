@@ -1,3 +1,4 @@
+from cProfile import label
 import numpy as np
 import matplotlib.pyplot as plt
 from detuned_excitation.two_level_system import tls_commons, pulse
@@ -125,7 +126,7 @@ def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
-def am_twocolor_biexciton(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0, delta_e=0, delta_b=8):
+def am_twocolor_biexciton(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0, delta_e=0, delta_b=8, alpha=0):
     """
     two pulses added together, forming a beat. t02 is the time difference between the two pulses.
     pulse 1 is centered around t=0, pulse 2 around t02.
@@ -137,6 +138,9 @@ def am_twocolor_biexciton(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*n
     """
     # take a time window which fits both pulses, even if one is centered around t != 0
     tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
+    if alpha != 0:
+        tau_new = np.sqrt((alpha**2 / tau1**2) + tau1**2 )
+        tau = tau_new
     t0 = 4*tau
     # t = np.arange(-t0,t0,dt)
 
@@ -152,7 +156,7 @@ def am_twocolor_biexciton(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*n
     
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
-    f,p,states,polars = tls_commons.biex_am_fortran(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, det1=detuning, det2=energy_pulse2, t02=t02, phase=phase, delta_e=delta_e, delta_b=delta_b)
+    f,p,states,polars = tls_commons.biex_am_fortran(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, det1=detuning, det2=energy_pulse2, t02=t02, phase=phase, delta_e=delta_e, delta_b=delta_b, alpha=alpha)
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
@@ -539,7 +543,7 @@ def biexciton_stability_pulse2(tau1, tau2, area1, area2s, detuning, detuning2s, 
     plt.ylabel("area2/pi")
     plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
     plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
-    plt.colorbar()
+    plt.colorbar(label="X occupation")
     plt.show()
     return x_ax, y_ax, endvals
 
@@ -737,12 +741,12 @@ def detuning_area(det2s, area2s, det1, tau1, tau2, area1, t02=0, dt=1):
            endvals[i,j],_,_,_,_ = am_twocolor_fortran(dt=dt, detuning=det1, tau1=tau1, tau2=tau2, area1=area1, area2=y_ax[i], detuning2=x_ax[j], t02=t02)
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
-    print("{}, det2:{:.4f}, area_cw:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,endvals[ind[0],ind[1]]))
+    print("{}, det2:{:.4f}, area2:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,endvals[ind[0],ind[1]]))
     plt.xlabel("detuning2")
-    plt.ylabel("area/pi")
+    plt.ylabel("area2/pi")
     plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
     plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
-    plt.plot(x_ax, (1/np.pi)*np.sqrt(2*np.pi*tau1**2)*(1/HBAR)*np.sqrt((det1- x_ax)**2-det1**2), 'r-')
+    #plt.plot(x_ax, (1/np.pi)*np.sqrt(2*np.pi*tau1**2)*(1/HBAR)*np.sqrt((det1- x_ax)**2-det1**2), 'r-')
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals

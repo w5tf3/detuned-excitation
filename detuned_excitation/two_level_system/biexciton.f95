@@ -1,14 +1,15 @@
 
 subroutine biex_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, &
-    tau1, tau2, e_energy1, e_energy2, e01, e02, delta_b, delta_E, t02, phase)
+    tau1, tau2, e_energy1, e_energy2, e01, e02, delta_b, delta_E, t02, phase, alpha)
     ! ===============================
     ! solves biexciton / three level system for two pulses with given parameters
     ! rotating frame with energy of E_x is used. 
+    ! the first pulse can be chirped by specifying alpha
     ! if big detunings are used, think about using one of those as rot. frame frequencies
     ! ===============================
     implicit none
     integer :: i=0
-    Real*8,intent(in) :: t_0, delta_E, phase
+    Real*8,intent(in) :: t_0, delta_E, phase, alpha
     ! times are given in fs, energies in meV
     ! e01, e02 are pulse areas
     Real*8,intent(in) :: dt, tau1, tau2, e_energy1, e_energy2, e01, e02, delta_B, t02
@@ -19,7 +20,7 @@ subroutine biex_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_po
     Complex*16,intent(out):: out_polar(3)
     Real*8,intent(out):: out_states(n_steps,3)
     Complex*16,intent(out):: out_polars(n_steps,3)
-    Real*8 :: HBAR
+    Real*8 :: HBAR, tau1_new, a_chirp
     Real*8 :: E_x, E_b
     Real*8 :: t, pi, w_1, w_2, phidot, phi
     Real*8 :: k1r(3), k2r(3), k3r(3), k4r(3), energies(2)
@@ -36,6 +37,8 @@ subroutine biex_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_po
     E_x = delta_E
     E_b = 2.*delta_E - delta_B
     ! pulse parameters
+    tau1_new = sqrt((alpha**2. / tau1**2.) + tau1**2. )
+    a_chirp = alpha / (alpha**2. + tau1**4.)
     w_1 = e_energy1 / HBAR
     w_2 = e_energy2 / HBAR
     ! steps for the loop 
@@ -55,14 +58,14 @@ subroutine biex_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_po
     do i = 0, n_steps - 2
         ! take first rk4 step:
         t = t_0 + i * dt
-        laser1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_1-phi)*t)/ sqrt(2.*pi*tau1 * tau1)
+        laser1 = e01 * exp(-0.5 * (t/tau1_new)**2.) * exp(-ii*(w_1-phi + 0.5*a_chirp*t)*t)/ sqrt(2.*pi*tau1 * tau1_new)
         laser2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*((w_2-phi)*(t-t02) + phase))/ sqrt(2.*pi*tau2 * tau2)
         omm = laser1 + laser2
         call biex_eq_rf(out_states(i+1,:), out_polars(i+1,:), phidot, omm, energies, k1r, k1i)
 
         ! now t -> t+h/2
         t = t_0 + i * dt + 0.5*dt
-        laser1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_1-phi)*t)/ sqrt(2.*pi*tau1 * tau1)
+        laser1 = e01 * exp(-0.5 * (t/tau1_new)**2.) * exp(-ii*(w_1-phi + 0.5*a_chirp*t)*t)/ sqrt(2.*pi*tau1 * tau1_new)
         laser2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*((w_2-phi)*(t-t02) + phase))/ sqrt(2.*pi*tau2 * tau2)
         omm = laser1 + laser2
         
@@ -70,7 +73,7 @@ subroutine biex_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_po
         call biex_eq_rf(out_states(i+1,:)+0.5*dt*k2r, out_polars(i+1,:)+0.5*dt*k2i, phidot,  omm, energies, k3r, k3i)
         ! now t -> t+h
         t = t_0 + i * dt + dt
-        laser1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_1-phi)*t)/ sqrt(2.*pi*tau1 * tau1)
+        laser1 = e01 * exp(-0.5 * (t/tau1_new)**2.) * exp(-ii*(w_1-phi + 0.5*a_chirp*t)*t)/ sqrt(2.*pi*tau1 * tau1_new)
         laser2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*((w_2-phi)*(t-t02) + phase))/ sqrt(2.*pi*tau2 * tau2)
         omm = laser1 + laser2
         call biex_eq_rf(out_states(i+1,:)+dt*k3r, out_polars(i+1,:)+dt*k3i, phidot, omm, energies, k4r, k4i)
