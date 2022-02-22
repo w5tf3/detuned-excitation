@@ -1,3 +1,4 @@
+from scipy.fft import fftfreq
 from detuned_excitation.amplitude_modulation.am import *
 from detuned_excitation.two_level_system.helper import export_csv
 import matplotlib.pyplot as plt
@@ -7,12 +8,21 @@ import numpy as np
 import os
 import tqdm
 
+HBAR = 6.582119514e2  # meV fs
+
 #f,s,t,p,_ = am_twopulse_excitation(dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1812)
 #t2, x2, p_ = test_beat(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
 #t2, x2, p_ = test_beat_special_frame1(dt=1, tau1=6200, tau2=9600, area1=29.0*np.pi, area2=29.0*np.pi, t02=-1800)
 # energy1: -5meV, energy2:-11.3158meV
 def blochsphere(tau1=2405, tau2=3035, area1=22.4984*np.pi, area2=20.1275*np.pi, t02=-725, detuning=-8.0,detuning2=None, video=False, mesh=False, export_data=None):
     t, x2, p_ = am_twocolor(tau1=tau1, tau2=tau2, area1=area1, area2=area2, t02=t02, detuning=detuning, detuning2=detuning2)
+
+    envelope = p_.get_total(t)
+    dt = np.abs(t[0]-t[1])
+    freqs = 2*np.pi*HBAR*np.fft.fftfreq(len(t),d=dt)
+    ft_x = np.fft.fft(envelope)
+    plt.plot(np.fft.fftshift(freqs),np.fft.fftshift(np.abs(ft_x)))
+    plt.show()
 
     s = x2[:,0].real
     p = x2[:,1]
