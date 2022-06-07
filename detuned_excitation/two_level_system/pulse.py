@@ -7,7 +7,7 @@ HBAR = 6.582119514e2  # meV fs
 
 class Pulse:
 
-    def __init__(self, tau, e_start, w_gain=0, t0=0, e0=1, phase=0):
+    def __init__(self, tau, e_start, w_gain=0, t0=0, e0=1, phase=0, polar_1=1):
         self.tau = tau  # in fs
         self.e_start = e_start  # in meV
         self.w_start = e_start / HBAR  # in 1 / fs
@@ -17,6 +17,8 @@ class Pulse:
         self.phase = phase
         self.freq = None
         self.phase_ = None
+        self.polar_1 = polar_1
+        self.polar_2 = np.sqrt(1-polar_1**2)
 
     def __repr__(self):
         return "%s(tau=%r, e_start=%r, w_gain=%r, t0=%r, e0=%r)" % (
@@ -113,9 +115,9 @@ class SmoothRectangle(Pulse):
     Rectangular pulse that is switched on/off with a sigmoid shape.
 
     """
-    def __init__(self, tau, e_start, w_gain=0, t0=0, e0=1, phase=0, alpha_onoff=100):
+    def __init__(self, tau, e_start, w_gain=0, t0=0, e0=1, phase=0, alpha_onoff=100, polar_1=1):
         self.alpha = 1/alpha_onoff  # switch on/off time in fs
-        super().__init__(tau, e_start, w_gain=w_gain, t0=t0, e0=e0, phase=phase)
+        super().__init__(tau, e_start, w_gain=w_gain, t0=t0, e0=e0, phase=phase, polar_1=polar_1)
 
     def get_envelope_f(self):
         return lambda t: self.e0/( (1+np.exp(-self.alpha*(t+self.tau/2 - self.t0))) * (1+np.exp(-self.alpha*(-t+self.tau/2 + self.t0))) )
@@ -158,10 +160,10 @@ class RectanglePulse(Pulse):
 
 
 class ChirpedPulse(Pulse):
-    def __init__(self, tau_0, e_start, alpha=0, t0=0, e0=1*np.pi):
+    def __init__(self, tau_0, e_start, alpha=0, t0=0, e0=1*np.pi, polar_1=1):
         self.tau_0 = tau_0
         self.alpha = alpha
-        super().__init__(np.sqrt(alpha**2 / tau_0**2 + tau_0**2), e_start, w_gain=alpha/(alpha**2 + tau_0**4), t0=t0, e0=e0)
+        super().__init__(np.sqrt(alpha**2 / tau_0**2 + tau_0**2), e_start, w_gain=alpha/(alpha**2 + tau_0**4), t0=t0, e0=e0, polar_1=polar_1)
     
     def get_parameters(self):
         """
