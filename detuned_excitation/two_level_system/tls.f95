@@ -276,7 +276,7 @@ subroutine tls_fm(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, ou
 end subroutine tls_fm
 
 subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, tau1,&
-    tau2, e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, delta_e, t02, phase)
+    tau2, e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, rf_energy, t02, phase)
 ! ===============================
 ! solves two level system for two pulses with given parameters
 ! tau_0, e_energy, alpha, e0, t02 are pulse parameters
@@ -284,7 +284,7 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
     implicit none
     integer :: i=0
     Real*8,intent(in) :: t_0, t02
-    Real*8,intent(in) :: dt, tau1, e_energy1, a_chirp1, e01, delta_e, tau2, e_energy2, a_chirp2, e02, phase
+    Real*8,intent(in) :: dt, tau1, e_energy1, a_chirp1, e01, rf_energy, tau2, e_energy2, a_chirp2, e02, phase
     integer,intent(in) :: n_steps
     Real*8,intent(in):: in_state
     Complex*16,intent(in):: in_polar
@@ -311,16 +311,20 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
 
     out_states(1)=g;
     out_polars(1)=p;
-    phidot = delta_e/HBAR
-    delta = phidot - delta_e/HBAR
+    ! rotating frame with system energy: delta = 0, phidot = 0
+    ! so the 'delta' in the bloch eq. is zero, and the fields include the whole detuning
+    ! different: rf with first detuning: delta = e_energy1/HBAR = phidot
+    ! so the first laser has no oscillation at all, and the detuning is included in the bloch eq.
+    phidot = rf_energy/HBAR
+    delta = rf_energy/HBAR
     do i = 0, n_steps - 2
 
         ! take rk4 step
         t = t_0 + i * dt
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
-        omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
+        omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-phidot &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-delta_e/HBAR &
+        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-phidot &
                + 0.5*a_chirp2*(t-t02))*(t-t02) + phase ))/ sqrt(2.*pi*tau2 * tau2)
         !phidot = w_start + a_chirp * t
         !delta = phidot - delta_e/HBAR
@@ -328,9 +332,9 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
         ! t -> t+h/2 
         t = t_0 + i*dt + 0.5*dt
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
-        omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
+        omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-phidot &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-delta_e/HBAR &
+        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-phidot &
                + 0.5*a_chirp2*(t-t02))*(t-t02) + phase ))/ sqrt(2.*pi*tau2 * tau2)
         !phidot = w_start + a_chirp * t
         !delta = phidot - delta_e/HBAR
@@ -339,9 +343,9 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
         ! t -> t+h
         t = t_0 + i*dt + dt
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
-        omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
+        omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-phidot &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-delta_e/HBAR &
+        omm2 = e02 * exp(-0.5 * ((t-t02)/tau2)**2.) * exp(-ii*( (w_start2-phidot &
                + 0.5*a_chirp2*(t-t02))*(t-t02) + phase ))/ sqrt(2.*pi*tau2 * tau2)
         
         call tls_eq(g+k3r*dt, p+k3i*dt, omm1+omm2, delta, k4r, k4i)
@@ -507,5 +511,6 @@ subroutine tls_eq(in_state, in_polar, e_f, delta, out_state, out_polar)
     Complex*16 :: ii = (0.0,1.0)
 
     out_state = AIMAG(conjg(e_f)*in_polar)
+    ! delta = phidot - omega_0, where omega_0 = system frequency
     out_polar = ii*delta*in_polar + ii*0.5*e_f*(1-2*in_state)
 end subroutine tls_eq

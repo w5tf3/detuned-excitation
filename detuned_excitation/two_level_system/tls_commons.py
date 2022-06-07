@@ -64,16 +64,18 @@ def two_level_chirp_a(t0=-4*400, dt=20, t_end=4*400, f_start=0, p_start=0, energ
     return f, p, states
 
 
-def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0, phase=0, delta_e=0):
+def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, tau2=400, energy1=0, energy2=0, chirp1=60e-6, chirp2=0, area1=7*np.pi, area2=0, phase=0, rf_energy=None):
     """
     use the fortran implementation compiled with f2py to solve the diff. eqs. for two simultaneous pulses
     the default parameters show a chirped excitation with one pulse
     """
     n_steps = int(abs(t_end-t0)/dt)+1
+    if rf_energy is None:
+        rf_energy = energy1
     f, _, states, polars = tls.tls_twopulse(t_0=t0, dt=dt, n_steps=n_steps, in_state=f_start,
                                 in_polar=p_start, tau1=tau1, tau2=tau2, e_energy1=energy1,
                                 e_energy2=energy2, a_chirp1=chirp1, a_chirp2=chirp2,
-                                e01=area1, e02=area2, delta_e=delta_e, t02=t02, phase=phase)
+                                e01=area1, e02=area2, rf_energy=rf_energy, t02=t02, phase=phase)
     return f, polars, states
 
 
@@ -147,7 +149,20 @@ def tls_arbitrary_pulse(t0, e0, n_steps, dt=3, delta_e=0, in_state=0, in_polar=0
     f,p,states,polars = tls.tls_arbitrary_field(t0,dt,in_state,in_polar,e0,delta_e,n_steps)
     return f, p, states, polars
 
-def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
+def biex_arbitrary_pulse(e0, n_steps, dt=3, delta_e=0, delta_b=4, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0], dtype=complex), strict=True):
+    """
+    ### Parameters 
+    e0: array with electric field, complex. has to be of length 2*len(out_size)-1, where out_size is the (desired) size of the result array
+    n_steps: just for checking the input
+    dt: time step
+    """
+    if strict and 2*n_steps-1 != len(e0):
+        print("size of e0 does not match step count")
+        exit(1)
+    f,p,states,polars = biexciton.biex_arbitrary_field(dt,in_state,in_polar,e0,delta_b,delta_e,n_steps)
+    return f, p, states, polars
+
+def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e, args={}):
     """
     runge kutta 4 to solve differential equations.
     :param t0: time at which the calculation starts
@@ -165,10 +180,10 @@ def runge_kutta(t0, x0, t1, h, equation, pulse, delta_e):
     x = np.zeros([s + 1, n_], dtype=complex)
     x[0] = x0
     for t_, i in zip(t, range(s)):
-        k1 = equation(t_, x[i], pulse, delta_e)
-        k2 = equation(t_ + h / 2, x[i] + k1 * h / 2, pulse, delta_e)
-        k3 = equation(t_ + h / 2, x[i] + k2 * h / 2, pulse, delta_e)
-        k4 = equation(t_ + h, x[i] + k3 * h, pulse, delta_e)
+        k1 = equation(t_, x[i], pulse, delta_e, **args)
+        k2 = equation(t_ + h / 2, x[i] + k1 * h / 2, pulse, delta_e, **args)
+        k3 = equation(t_ + h / 2, x[i] + k2 * h / 2, pulse, delta_e, **args)
+        k4 = equation(t_ + h, x[i] + k3 * h, pulse, delta_e, **args)
         x[i + 1] = x[i] + (k1 + 2 * k2 + 2 * k3 + k4) * h / 6.
     return t, np.array(x, dtype=complex)
 
@@ -210,9 +225,7 @@ def bloch_eq_constrf(t, x, pulse_, rf_freq=0):
 
 
 def bloch_eq_general_rf(t, x, pulse_, _):
-    # eq. in frame rotating with a constant frequency
-    # if rf_freq=0, it is rotating with the system frequency
-    # the np.exp(1j*delta_e/HBAR*t) factor results from the RF
+    # eq. in frame rotating with the laser frequency
     e_f = pulse_.get_total(t)
     delta = pulse_.rf_freq(t)
     f = x[0]
@@ -235,3 +248,26 @@ def bloch_eq_pulse_total(t, x, pulse_, rf_freq=0):
     _f = np.imag( np.conj(e_f) * p )
     _p = 1j * delta * p + 0.5j * e_f * ( 1 - 2 * f ) 
     return np.array( [_f, _p], dtype=complex )
+
+def biexciton_constrf(t, _x, pulse_, rf_freq=0,delta_b=4):
+    e_f = pulse_.get_total(t)
+    delta = rf_freq
+
+    E_X = 0
+    E_B = 2*E_X - delta_b
+
+    phidot = rf_freq * HBAR
+    g = 1-_x[0]-_x[1]
+    x = _x[0]
+    b = _x[1]
+    gx = _x[2]
+    gb = _x[3]
+    xb = _x[4]
+
+    #g = (1/2)*1j*gx*np.conj(e_f) - 1/2*1j*e_f*np.conj(gx)
+    _gx = (1/2)*1j*g*e_f + (1/2)*1j*gb*np.conj(e_f) + 1j*gx*(-E_X + phidot)/HBAR - 1/2*1j*e_f*x
+    _gb = 1j*gb*(-E_B + 2*phidot)/HBAR + (1/2)*1j*gx*e_f - 1/2*1j*e_f*xb
+    __x = -1/2*1j*gx*np.conj(e_f) + (1/2)*1j*e_f*np.conj(gx) - 1/2*1j*e_f*np.conj(xb) + (1/2)*1j*xb*np.conj(e_f)
+    _xb = -1/2*1j*b*e_f - 1/2*1j*gb*np.conj(e_f) + (1/2)*1j*e_f*x + 1j*xb*(-E_B + E_X + phidot)/HBAR
+    _b = (1/2)*1j*e_f*np.conj(xb) - 1/2*1j*xb*np.conj(e_f)
+    return np.array( [__x, _b, _gx, _gb, _xb], dtype=complex )

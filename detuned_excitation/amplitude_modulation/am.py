@@ -1,4 +1,3 @@
-from cProfile import label
 import numpy as np
 import matplotlib.pyplot as plt
 from detuned_excitation.two_level_system import tls_commons, pulse
@@ -95,7 +94,7 @@ def am_twocolor(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detu
     #plt.show()
     return t, x, p_total
 
-def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0, delta_e=0):
+def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, t02=0, factor=1.0, factor2=1.0, detuning2=None, phase=0, rf_energy=None, t_factor=4):
     """
     two pulses added together, forming a beat. t02 is the time difference between the two pulses.
     pulse 1 is centered around t=0, pulse 2 around t02.
@@ -107,7 +106,7 @@ def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.
     """
     # take a time window which fits both pulses, even if one is centered around t != 0
     tau = tau1 if tau1 > (tau2+np.abs(t02)) else (tau2+np.abs(t02))
-    t0 = 4*tau
+    t0 = t_factor*tau
     # t = np.arange(-t0,t0,dt)
 
     # here we calculate the laser frequency for the second pulse
@@ -122,7 +121,10 @@ def am_twocolor_fortran(tau1=5000, tau2=5000, dt=5, area1=10*np.pi, area2=10*np.
     
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
-    f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02, phase=phase, delta_e=delta_e)
+    if rf_energy is None:
+        rf_energy = detuning
+
+    f,polars,states = tls_commons.twopulse(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, tau2=tau2, chirp1=0, chirp2=0, energy1=detuning, energy2=energy_pulse2, t02=t02, phase=phase, rf_energy=rf_energy)
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
@@ -742,11 +744,44 @@ def detuning_area(det2s, area2s, det1, tau1, tau2, area1, t02=0, dt=1):
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
     print("{}, det2:{:.4f}, area2:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,endvals[ind[0],ind[1]]))
-    plt.xlabel("detuning2")
-    plt.ylabel("area2/pi")
-    plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
-    plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
+    fig, ax = plt.subplots()
+    ax.set_xlabel("detuning2")
+    ax.set_ylabel("area2/pi")
+    pcm = ax.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
+    ax.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
+    #det2 = get_detuning2(tau1, area1, det1)
+    #plt.scatter([det2 for _ in range(51)], [v for v in range(51)])
+    #plt.scatter([det2-det1 for _ in range(51)], [v for v in range(51)])
+    #plt.scatter([det1*2 for _ in range(51)], [v for v in range(51)])
+    # p1 = pulse.Pulse(tau=tau1, e_start=0, w_gain=0, e0=area1, t0=0)
+    # plt.scatter([2*det1 for _ in range(51)], [v for v in range(51)])
     #plt.plot(x_ax, (1/np.pi)*np.sqrt(2*np.pi*tau1**2)*(1/HBAR)*np.sqrt((det1- x_ax)**2-det1**2), 'r-')
-    plt.colorbar()
+    fig.colorbar(pcm,ax=ax)
+    cid = fig.canvas.mpl_connect('button_press_event', get_onclick(dt,tau1,tau2,area1,det1,t02))
     plt.show()
+    fig.canvas.mpl_disconnect(cid)
     return x_ax, y_ax, endvals
+
+
+def moving_average(arr, n=100):
+    return np.convolve(arr, np.ones(n), 'valid') / n
+
+def get_onclick(dt, tau1, tau2, area1, det1, t02):
+    def onclick(event):
+        # if doubleclick on the colormap, simulate the dynamics for the parameters selected
+        if event.dblclick:
+            detuning2 = event.xdata
+            # because T2**2 is plotted above
+            area2 = event.ydata*np.pi
+            fig2,ax2 = plt.subplots()
+            s, states, t, polars, energy_pulse2 = am_twocolor_fortran(dt=dt, detuning=det1, tau1=tau1, tau2=tau2, area1=area1, area2=area2, detuning2=detuning2, t02=t02)
+            plt.plot(t,states)
+            ma = moving_average(states,n=int(1000/dt))
+            plt.plot([t[0]+dt*i for i in range(len(ma))],ma)
+            print("x:{:.4f}, y:{:.4f}, final:{:.4f}".format(detuning2,area2/np.pi,s))
+            ax2.set_xlabel("time (fs)")
+            ax2.set_ylabel("occupation")
+            plt.show()
+            
+    return onclick
+

@@ -6,7 +6,7 @@ from torch._C import dtype
 import tqdm
 
 # constants
-hq = 0.6582173  # hbar in meV*ps
+hq = 0.65821195  # hbar in meV*ps
 pi = np.pi
 kb = 0.08617  # kboltz in meV/K
 i = 1j  # imaginary unit

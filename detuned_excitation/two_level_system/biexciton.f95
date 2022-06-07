@@ -181,6 +181,78 @@ subroutine biex_rectangle(t_0, dt, n_steps, in_state, in_polar, out_state, out_p
 
 end subroutine biex_rectangle
 
+subroutine biex_arbitrary_field(dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, &
+    e0, delta_b, delta_E)
+    ! ===============================
+    ! solves biexciton / three level system for two pulses with given parameters
+    ! rotating frame with energy of E_x is used. 
+    ! the first pulse can be chirped by specifying alpha
+    ! if big detunings are used, think about using one of those as rot. frame frequencies
+    ! ===============================
+    implicit none
+    integer :: i=0
+    Real*8,intent(in) :: delta_E
+    ! times are given in fs, energies in meV
+    ! e01, e02 are pulse areas
+    Real*8,intent(in) :: dt, delta_B
+    integer,intent(in) :: n_steps
+    Real*8,intent(in):: in_state(3)
+    Complex*16,intent(in):: in_polar(3), e0(2*n_steps-1)
+    Real*8,intent(out):: out_state(3)
+    Complex*16,intent(out):: out_polar(3)
+    Real*8,intent(out):: out_states(n_steps,3)
+    Complex*16,intent(out):: out_polars(n_steps,3)
+    Real*8 :: HBAR
+    Real*8 :: E_x, E_b
+    Real*8 :: pi, phidot, phi !, t
+    Real*8 :: k1r(3), k2r(3), k3r(3), k4r(3), energies(2)
+    Complex*16 :: k1i(3), k2i(3), k3i(3), k4i(3), e_field
+    ! constants
+    pi = 4.0d0*atan(1.0d0)
+    HBAR = 6.582119514E02  ! meV fs
+    out_state = in_state
+    
+    !g=in_state(1); x=in_state(2); b=in_state(3)
+    !gx=in_polar(1); gb=in_polar(2); xb=in_polar(3);
+    ! energies
+    E_x = delta_E
+    E_b = 2.*delta_E - delta_B
+    ! steps for the loop 
+    !n_steps = int(abs(t_end - t_0)/dt) - 1
+
+    ! starting parameters
+    out_states(1,:) = in_state
+    out_polars(1,:) = in_polar
+    out_polar = in_polar
+
+    ! phidot in meV. actually this is phidot*HBAR
+    ! remember to substract phi (not phidot) in the exponential function of the electric field
+    phidot = E_x 
+    ! actually phi/t. if this is time dependent (i.e. modulated frequency and using a time dependent rot. frame), move inside the loop
+    phi = E_x / HBAR
+    energies(1)=E_x; energies(2)=E_b
+    do i = 0, n_steps - 2
+        ! take first rk4 step:
+        ! t = t_0 + i * dt
+        e_field = e0(2*i+1) ! careful: loop starts at i=0, but array indexing starts at 1
+        call biex_eq_rf(out_states(i+1,:), out_polars(i+1,:), phidot, e_field, energies, k1r, k1i)
+
+        ! now t -> t+h/2
+        ! t = t_0 + i * dt + 0.5*dt
+        e_field = e0(2*i+2)
+        call biex_eq_rf(out_states(i+1,:)+0.5*dt*k1r, out_polars(i+1,:)+0.5*dt*k1i, phidot, e_field, energies, k2r, k2i)
+        call biex_eq_rf(out_states(i+1,:)+0.5*dt*k2r, out_polars(i+1,:)+0.5*dt*k2i, phidot, e_field, energies, k3r, k3i)
+        ! now t -> t+h
+        ! t = t_0 + i * dt + dt
+        e_field = e0(2*i+3)
+        call biex_eq_rf(out_states(i+1,:)+dt*k3r, out_polars(i+1,:)+dt*k3i, phidot, e_field, energies, k4r, k4i)
+        out_states(i+2,:) = out_states(i+1,:) + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
+        out_polars(i+2,:) = out_polars(i+1,:) + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
+    end do
+    out_state = out_states(n_steps,:)
+    out_polar = out_polars(n_steps,:)
+end subroutine biex_arbitrary_field
+
 
 subroutine biex_eq_rf(in_state, in_polar, phidot, omega_x, energies, out_state, out_polar)
     implicit none
