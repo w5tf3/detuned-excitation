@@ -224,6 +224,7 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
 # t,_,_,pulse_t = cut_super(tau1=110,dt=2,area1=np.pi,area2=0,detuning1=0)
 # t = np.linspace(t[0],t[-1],len(pulse_t))
 # print(HBAR/110*(2*np.sqrt(2*np.log(2))))
+# t2, pulse_t2 = cut_pulses(dt=10,area=1*np.pi, do_plot=True, mode="use_all", center=0, broad_tau=2200, detuning1=0, cut_width1=50,factor2=0,chirp=0e6)
 
 # t2, pulse_t2 = cut_pulses(dt=10,area=5*np.pi, do_plot=True, gauss=False, center=0, broad_tau=110, detuning1=0, cut_width1=50,factor2=0,chirp=0.3e6)
 # t2, pulse_t2 = cut_pulses(dt=10,area=1*np.pi, do_plot=True, gauss=False, center=-8.4, broad_tau=100, detuning1=0, cut_width1=50,factor2=0,chirp=0)

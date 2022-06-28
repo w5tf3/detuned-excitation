@@ -24,7 +24,7 @@ HBAR = 6.582119514e2  # meV fs
 # weird 3pi case
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, detuning=-5, tau1=2920.7755, area1=35.4694*np.pi, area2=1.5*35.4694*np.pi, tau2=2920.7755, t02=1.5*2920.5306)
 
-# _, s, t2, _, _ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
+# _, s, t, _, _ = am_twocolor_fortran(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
 # _, s2, t2, _, _ = am_twocolor_fortran(phase=np.pi/2,tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=-730, detuning=-8.0000, detuning2=-19.1630)
 
 # _, s, t2, _, _ = am_twocolor_fortran(dt=1, tau1=2405, tau2=3035, area1=3*np.pi, area2=0*np.pi, t02=0, detuning=0.0000, detuning2=0.0)
@@ -47,26 +47,26 @@ HBAR = 6.582119514e2  # meV fs
 # # plt.plot(t,np.real(p), 'r-')
 # plt.ylim([-0.1,1.1])
 # plt.show()
-det1 = -8
-det2 = -19.163
-t,x,p = am_twocolor(rf_energy=(det2-det1)/2 ,tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=0, detuning=-8.0000, detuning2=-19.1630)
+# det1 = -8
+# det2 = -19.163
+t,x,p = am_twocolor(dt=1,tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=0, detuning=-8.0000, detuning2=-19.1630)
 plt.plot(t,x[:,0].real)
 plt.show()
-plt.plot(t,x[:,1].real, 'r-')
-plt.plot(t,x[:,1].imag, 'b-')
-plt.show()
+# plt.plot(t,x[:,1].real, 'r-')
+# plt.plot(t,x[:,1].imag, 'b-')
+# plt.show()
 
-ft = np.fft.fft(x[:,0].real)
-ft2 = np.fft.fft(x[:,1].real)
-ft3 = np.fft.fft(x[:,1].imag)
-dt = np.abs(t[0]-t[1])
-fft_freqs = 2*np.pi*HBAR*np.fft.fftfreq(len(t),d=dt)
-plt.plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(ft)), label="ft(f)")
-plt.plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(ft2)),label="ft(pr)")
-plt.plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(ft3)),label="ft(pi)")
-plt.legend()
-plt.show()
-print(t.shape)
+# ft = np.fft.fft(x[:,0].real)
+# ft2 = np.fft.fft(x[:,1].real)
+# ft3 = np.fft.fft(x[:,1].imag)
+# dt = np.abs(t[0]-t[1])
+# fft_freqs = 2*np.pi*HBAR*np.fft.fftfreq(len(t),d=dt)
+# plt.plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(ft)), label="ft(f)")
+# plt.plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(ft2)),label="ft(pr)")
+# plt.plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(ft3)),label="ft(pi)")
+# plt.legend()
+# plt.show()
+# print(t.shape)
 
 # _, s, t, _,_ = am_twocolor_biexciton(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=0, detuning=-8.0000, detuning2=-19.1630, delta_b=-8)
 # _, s, t, _,_ = am_twocolor_biexciton(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=35*np.pi, t02=0, detuning=-8.0000, detuning2=-17.9592, delta_b=3)
@@ -76,9 +76,34 @@ print(t.shape)
 # plt.legend()
 # plt.show()
 
-# detuning1=-8
-# delta_b=3
-# biexciton_stability_pulse2(tau1=2400,tau2=3040,area1=25.65*np.pi,area2s=np.linspace(20,40,50)*np.pi,detuning=detuning1,detuning2s=np.linspace(2.5*detuning1,2*detuning1,50),delta_b=delta_b)
+# det2s = np.linspace(-6,-16, 100)
+# area1 = 25*np.pi
+# areas2 = np.linspace(0,2,200)*area1
+# p1 = pulse.Pulse(tau=3000, e_start=0, w_gain=0, e0=area1, t0=0)
+# rf = lambda t: np.sqrt((p1.get_envelope_f()(t))**2)
+# rf_max = rf(t=0)
+# print(HBAR*rf_max)
+# det1=-5
+# print(get_detuning2(tau1=3000,area1=area1,detuning=det1))
+# print(get_detuning2(tau1=3000,area1=area1,detuning=det1)-det1)
+# detuning_area(det2s, areas2, det1, tau1=3000, tau2=3000, area1=area1, dt=4,t02=0)
+
+
+# t,x,p = am_twocolor(dt=4,tau1=3000, tau2=2500, area1=50*np.pi, area2=33.84*np.pi, t02=0, detuning=-10.0000, detuning2=-19.101)
+# t,x,p = am_twocolor(dt=4,tau1=3000, tau2=2500, area1=0*np.pi, area2=2*np.pi, t02=0, detuning=-5, detuning2=-0)
+# t,x,p = am_twocolor(dt=4,tau1=3000, tau2=3000, area1=25*np.pi, area2=32*np.pi, t02=0, detuning=-5, detuning2=-10)
+# plt.plot(t,x[:,0].real)
+# plt.show()
+# print(get_detuning2(3000,19.99,-9)+9)
+
+# t,x,p = am_twocolor(dt=4,tau1=3000, tau2=2500, area1=25*np.pi, area2=3.03*np.pi, t02=0, detuning=-5.0000, detuning2=2.11)
+# plt.plot(t,x[:,0].real)
+# plt.show()
+
+# detuning1=-10
+# delta_b=4
+# area1=30*np.pi
+# biexciton_stability_pulse2(tau1=2400,tau2=3040,area1=area1,area2s=np.linspace(0.5*area1,2*area1,50),detuning=detuning1,detuning2s=np.linspace(2.5*detuning1,1.8*detuning1,50),delta_b=delta_b)
 
 # _, s, t, _,_ = am_twocolor_sixls(tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, t02=0, detuning=-8.0000, detuning2=-19.1630, bz=-4)
 # plt.plot(t, s[:,0],label="g")
@@ -150,13 +175,30 @@ print(t.shape)
 # area2 = 33*np.pi/(8*tau1)
 # det = -7.5327
 # area2 = 42.211*np.pi/(8*tau1)
-# f, states, t, polars, energy_pulse2 = am_cw_fortran(dt=1,tau1=tau1, area1=20*np.pi, area2=area2, detuning=det, t02=0)
+# print(HBAR*area2)
+# area2 = 4.55/HBAR 
+# f, states, t, polars, energy_pulse2 = am_cw_fortran(dt=1,tau1=tau1, area1=20*np.pi, area2=area2, detuning1=det, t02=-8e3, slope=0.5e3, n_tau=5)
+# print(energy_pulse2)
 # plt.plot(t,states)
 # plt.show()
 
-# dets = np.linspace(-5,-11,50)
-# areas_cw = np.linspace(0,60,50)*np.pi
-# x,y,z = cw_detuning_area(dets, areas_cw, tau1=2400, area1=20*np.pi)
+f, states, t, polars, energy_pulse2 = am_cw_fortran(dt=1,tau1=2400, area1=20*np.pi, area2=3.029/HBAR, detuning1=-5, detuning2=-13.188, t02=-8e3, slope=2e-3, n_tau=5)
+print(energy_pulse2)
+plt.plot(t, 0.8*np.exp(-0.5*t**2/(2.4e6)),label="gauss (arb.)")
+plt.plot(t, 0.5/(1+np.exp(-2e-3*(t+8e3))),label="cw (arb.)")
+plt.plot(t,states)
+plt.xlabel("t (fs)")
+plt.ylabel("X occupation")
+plt.legend()
+plt.show()
+
+# det2s = np.linspace(-10,-15,70)
+# areas_cw = np.linspace(1,6,70)/HBAR
+# x,y,z = cw_detuning2_area2(det2s, areas_cw, detuning1=-5, tau1=2400, area1=20*np.pi, t02=-8e3, slope=2e-3, n_tau=5)
+
+# det1s = np.linspace(-4,-7,70)
+# area1s = np.linspace(0,25,70)*np.pi
+# x,y,z = cw_detuning1_area1(det1s, area1s, area_cw=3/HBAR, detuning2=-13.2, tau1=2400, t02=-8e3, slope=2e-3, n_tau=5)
 
 # taus = np.linspace(1000,10000,50)
 # tau2s = 1.5*taus # + np.linspace(150,4000,50)

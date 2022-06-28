@@ -37,8 +37,12 @@ def test_chirp_a():
     t0 = 4*400
     dt = 20
     t = np.arange(-t0,t0,dt)
-    _,_,states = tls_commons.two_level_chirp_a(t0=-4*400, dt=dt, t_end=4*400-dt, f_start=0., p_start=0.+0.j, energy=0, a_chirp=60/(1000**2), area=8*np.pi, pulse_tau=400)
-    plt.plot(t,states)
+    _,p,states = tls_commons.two_level_chirp_a(t0=-4*400, dt=dt, t_end=4*400-dt, f_start=0., p_start=0.+0.j, energy=0, a_chirp=60/(1000**2), area=8*np.pi, pulse_tau=400)
+    f, polars, states = tls_commons.twopulse()
+    plt.plot(states)
+    plt.show()
+    plt.plot(polars.imag,'r-')
+    plt.plot(polars.real,'b-')
     plt.show()
 
 test_chirp_a()

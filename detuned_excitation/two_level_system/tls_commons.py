@@ -79,7 +79,7 @@ def twopulse(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400
     return f, polars, states
 
 
-def twopulse_cw(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, energy1=0, energy2=0, chirp1=60e-6, area1=7*np.pi, area2=0):
+def twopulse_cw(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=400, energy1=0, energy2=0, chirp1=60e-6, area1=7*np.pi, area2=0, slope=2e3):
     """
     use the fortran implementation compiled with f2py to solve the diff. eqs. for two simultaneous pulses
     the default parameters show a chirped excitation with one pulse
@@ -89,7 +89,7 @@ def twopulse_cw(t0=-4*400, dt=4, t_end=4*400, f_start=0, p_start=0, t02=0, tau1=
     f, _, states, polars = tls.tls_twopulse_cw_second(t_0=t0, dt=dt, n_steps=n_steps, in_state=f_start,
                                 in_polar=p_start, tau1=tau1, e_energy1=energy1,
                                 e_energy2=energy2, a_chirp1=chirp1, a_chirp2=0.0,
-                                e01=area1, e02=area2, delta_e=0, t02=t02)
+                                e01=area1, e02=area2, delta_e=0, t02=t02, slope=slope)
     mean_f = np.mean(states[-int(len(states)/10):])
     return mean_f, polars, states
 
@@ -145,7 +145,9 @@ def tls_arbitrary_pulse(t0, e0, n_steps, dt=3, delta_e=0, in_state=0, in_polar=0
     """
     if strict and 2*n_steps-1 != len(e0):
         print("size of e0 does not match step count")
+        print("is:{}, should:{}".format(len(e0),2*n_steps-1))
         exit(1)
+    e0 = e0[:2*n_steps-1]
     f,p,states,polars = tls.tls_arbitrary_field(t0,dt,in_state,in_polar,e0,delta_e,n_steps)
     return f, p, states, polars
 

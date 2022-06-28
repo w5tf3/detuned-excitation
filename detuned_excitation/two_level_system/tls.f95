@@ -360,7 +360,7 @@ subroutine tls_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state, out_pol
 end subroutine tls_twopulse
 
 subroutine tls_twopulse_cw_second(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, tau1,&
-    e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, delta_e, t02)
+    e_energy1, e_energy2, a_chirp1, a_chirp2, e01, e02, delta_e, t02, slope)
 ! ===============================
 ! solves two level system for two pulses with given parameters
 ! tau_0, e_energy, alpha, e0, t02 are pulse parameters
@@ -368,7 +368,7 @@ subroutine tls_twopulse_cw_second(t_0, dt, n_steps, in_state, in_polar, out_stat
     implicit none
     integer :: i=0
     Real*8,intent(in) :: t_0, t02
-    Real*8,intent(in) :: dt, tau1, e_energy1, a_chirp1, e01, delta_e, e_energy2, a_chirp2, e02
+    Real*8,intent(in) :: dt, tau1, e_energy1, a_chirp1, e01, delta_e, e_energy2, a_chirp2, e02, slope
     integer,intent(in) :: n_steps
     Real*8,intent(in):: in_state
     Complex*16,intent(in):: in_polar
@@ -404,7 +404,7 @@ subroutine tls_twopulse_cw_second(t_0, dt, n_steps, in_state, in_polar, out_stat
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
         omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-ii*(w_start2-delta_e/HBAR &
+        omm2 = e02 /(1 + exp(-slope*(t-t02)) ) * exp(-ii*(w_start2-delta_e/HBAR &
                + 0.5*a_chirp2*(t-t02))*(t-t02))
         !phidot = w_start + a_chirp * t
         !delta = phidot - delta_e/HBAR
@@ -414,7 +414,7 @@ subroutine tls_twopulse_cw_second(t_0, dt, n_steps, in_state, in_polar, out_stat
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
         omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-ii*(w_start2-delta_e/HBAR &
+        omm2 = e02 /(1 + exp(-slope*(t-t02)) ) * exp(-ii*(w_start2-delta_e/HBAR &
                + 0.5*a_chirp2*(t-t02))*(t-t02))
         !phidot = w_start + a_chirp * t
         !delta = phidot - delta_e/HBAR
@@ -425,7 +425,7 @@ subroutine tls_twopulse_cw_second(t_0, dt, n_steps, in_state, in_polar, out_stat
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
         omm1 = e01 * exp(-0.5 * (t/tau1)**2.) * exp(-ii*(w_start1-delta_e/HBAR &
                + 0.5*a_chirp1*t)*t)/ sqrt(2.*pi*tau1 * tau1)
-        omm2 = e02 * exp(-ii*(w_start2-delta_e/HBAR &
+        omm2 = e02 /(1 + exp(-slope*(t-t02)) ) * exp(-ii*(w_start2-delta_e/HBAR &
                + 0.5*a_chirp2*(t-t02))*(t-t02))
         call tls_eq(g+k3r*dt, p+k3i*dt, omm1+omm2, delta, k4r, k4i)
         ! update parameters

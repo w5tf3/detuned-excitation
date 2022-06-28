@@ -237,7 +237,7 @@ def am_second_pulse_cw(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning
     _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq_constrf, p_total, rf_energy/HBAR)
     return t, x, p_total
 
-def am_cw_fortran(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, factor=1.0, factor2=1.0, detuning2=None, t02=0, n_tau=4):
+def am_cw_fortran(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning1=-5, factor=1.0, factor2=1.0, detuning2=None, t02=0, n_tau=4, slope=2e-3):
     """
     the duration of the simulation is 8*tau1: from -4*tau1 to 4*tau1
     """
@@ -247,18 +247,18 @@ def am_cw_fortran(tau1=5000, dt=5, area1=10*np.pi, area2=10*np.pi, detuning=-5, 
     # t = np.arange(-t0,t0,dt)
 
     # here we calculate the laser frequency for the second pulse
-    p1 = pulse.Pulse(tau=tau1, e_start=detuning, w_gain=0, e0=area1, t0=0)
-    rf = lambda t: np.sqrt(factor2*(p1.get_envelope_f()(t))**2 + (detuning/HBAR)**2)
+    p1 = pulse.Pulse(tau=tau1, e_start=detuning1, w_gain=0, e0=area1, t0=0)
+    rf = lambda t: np.sqrt(factor2*(p1.get_envelope_f()(t))**2 + (detuning1/HBAR)**2)
     rf_max = rf(t=0)  # max of rabifreq
     # the energy of the second laser should be the same as the first one, but reduced by rabifrequency*HBAR
     # factor = 1 seems to be optimal
-    energy_pulse2 = detuning - factor * HBAR*rf_max
+    energy_pulse2 = detuning1 - factor * HBAR*rf_max
     if detuning2 is not None:
         energy_pulse2 = detuning2
     
     # print("energy1: {:.4f}meV, energy2: {:.4f}meV".format(detuning, energy_pulse2))
 
-    f,polars,states = tls_commons.twopulse_cw(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, chirp1=0, energy1=detuning, energy2=energy_pulse2, t02=t02)
+    f,polars,states = tls_commons.twopulse_cw(t0=-t0, dt=dt, t_end=t0-dt,area1=area1, area2=area2, tau1=tau1, chirp1=0, energy1=detuning1, energy2=energy_pulse2, t02=t02, slope=slope)
     t = np.linspace(-t0,t0,len(states))
     return f, states, t, polars, energy_pulse2
 
@@ -716,20 +716,40 @@ def stability_factor2(factors=np.linspace(-1,2,200), tau1=2400, tau2=3000, area1
     plt.plot(energies, endvals)
     plt.show()
 
-def cw_detuning_area(dets, areas_cw, tau1, area1, t02=0, dt=1):
-    x_ax = dets
-    y_ax = areas_cw/(8*tau1)  # the simulation length is 8*tau
+def cw_detuning2_area2(det2s, areas_cw, tau1, area1, detuning1=-5, t02=0, dt=5, slope=2e-3, n_tau=5):
+    x_ax = det2s
+    y_ax = areas_cw  # amplitudes
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_,_ = am_cw_fortran(tau1=tau1, area1=area1, area2=y_ax[i], detuning=x_ax[j], t02=t02)
+           endvals[i,j],_,_,_,_ = am_cw_fortran(tau1=tau1, area1=area1, area2=y_ax[i], detuning1=detuning1, detuning2=x_ax[j], dt=dt, t02=t02, slope=slope, n_tau=n_tau)
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
-    print("{}, det1:{:.4f}, area_cw:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y*(8*tau1/np.pi),endvals[ind[0],ind[1]]))
+    print("{}, det2:{:.4f} meV, amplitude_cw:{:.4f} meV, endval:{:.4f}".format(ind,max_x,max_y*HBAR,endvals[ind[0],ind[1]]))
+    plt.title("detuning1:{} meV, area1:{} pi, tau1:{} ps".format(detuning1, area1/np.pi, tau1/1000))
+    plt.xlabel("detuning cw")
+    plt.ylabel("amplitude cw (meV)")
+    plt.pcolormesh(x_ax, y_ax*HBAR, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]],y_ax[ind[0]]*HBAR, 'r.')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax, endvals
+
+def cw_detuning1_area1(det1s, area1s, tau1, area_cw, detuning2=-5, t02=0, dt=5, slope=2e-3, n_tau=5):
+    x_ax = det1s
+    y_ax = area1s
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           endvals[i,j],_,_,_,_ = am_cw_fortran(tau1=tau1, area1=y_ax[i], area2=area_cw, detuning1=x_ax[j], detuning2=detuning2, dt=dt, t02=t02, slope=slope, n_tau=n_tau)
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    max_x,max_y = x_ax[ind[1]],y_ax[ind[0]]
+    print("{}, det1:{:.4f} meV, area1:{:.4f}pi, endval:{:.4f}".format(ind,max_x,max_y/np.pi,endvals[ind[0],ind[1]]))
+    plt.title("detuning2:{:.4f} meV, cw amplitude:{:.4f} meV, tau1:{} ps".format(detuning2, area_cw*HBAR, tau1/1000))
     plt.xlabel("detuning1")
-    plt.ylabel("area_cw/pi")
-    plt.pcolormesh(x_ax, y_ax*(8*tau1/np.pi), endvals, shading='auto')
-    plt.plot(x_ax[ind[1]],y_ax[ind[0]]*(8*tau1/np.pi), 'r.')
+    plt.ylabel("area1/pi")
+    plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals
