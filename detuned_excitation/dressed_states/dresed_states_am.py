@@ -172,12 +172,12 @@ def twolevels_dressedstates(tau1=6200, tau2=9600, dt=10, area1=29*np.pi, area2=2
     # calculate the interaction hamiltonian belonging to the second pulse in the dressed state basis
     e_values_new = np.empty_like(e_values)
     h_interaction = np.empty([len(t),2,2],dtype=complex)
-    for i in tqdm.trange(len(t)):
-        h_int = -np.array([[0,0.5*HBAR*p2.get_envelope(t[i])*np.exp(1j*(1/HBAR)*(detuning2-detuning1)*t[i])],
-                          [0.5*HBAR*p2.get_envelope(t[i])*np.exp(-1j*(1/HBAR)*(detuning2-detuning1)*t[i]),0]])
-        for j in range(2):
-            for k in range(2):
-                h_interaction[i,j,k] = np.dot(np.conjugate(np.transpose(e_vectors[i,:,j])),np.dot(h_int,e_vectors[i,:,k]))
+    # for i in tqdm.trange(len(t)):
+    #     h_int = -np.array([[0,0.5*HBAR*p2.get_envelope(t[i])*np.exp(1j*(1/HBAR)*(detuning2-detuning1)*t[i])],
+    #                       [0.5*HBAR*p2.get_envelope(t[i])*np.exp(-1j*(1/HBAR)*(detuning2-detuning1)*t[i]),0]])
+    #     for j in range(2):
+    #         for k in range(2):
+    #             h_interaction[i,j,k] = np.dot(np.conjugate(np.transpose(e_vectors[i,:,j])),np.dot(h_int,e_vectors[i,:,k]))
         # for both dressed states |+> and |->, also an energy contribution happens
     for i in range(len(t)):
         for j in range(2):
@@ -194,6 +194,8 @@ def twolevels_dressedstates(tau1=6200, tau2=9600, dt=10, area1=29*np.pi, area2=2
     plt.plot(t*1e-3,(e_values_new[:,1]-e_values_new[:,0]).real,label="E_1-E_0")
     plt.plot(t*1e-3,(e_values[:,1]-e_values[:,0]).real,label="E_1-E_0, no pulse 2")
     plt.plot(t*1e-3,[np.abs(detuning1-detuning2) for _ in range(len(t))],label="delta_21")
+    #p2_norm = p2.get_envelope(t) / np.max(p2.get_envelope(t))
+    #plt.plot(t*1e-3,5*p2_norm,label="pulse")
     plt.legend()
     plt.xlabel("t (ps)")
     plt.ylabel("E (meV)")
@@ -239,5 +241,6 @@ def twolevels_dressedstates(tau1=6200, tau2=9600, dt=10, area1=29*np.pi, area2=2
 
 
 # twolevels_dressedstates(area2=0)
-# twolevels_dressedstates(detuning1=0,area1=np.pi,tau2=100,area2=0,t02=0)
+# twolevels_dressedstates(detuning1=0,area1=5*np.pi,tau2=100,area2=0,t02=0,detuning2=0)
+# twolevels_dressedstates(detuning1=-8,area1=22.65*np.pi,tau1=2400,tau2=3040,area2=19.29*np.pi,t02=0,detuning2=-19.163)
 # twolevels_dressedstates(tau1=2496, tau2=3585, area1=29.3*np.pi, area2=29.1*np.pi, t02=1945, detuning=-11.0)

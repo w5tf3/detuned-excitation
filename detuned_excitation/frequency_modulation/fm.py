@@ -204,7 +204,7 @@ def fm_pulsed_fortran(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detunin
 # fm_pulsed_excitation(tau=9000, area=7*np.pi, detuning=7, small_detuning=2)
 # fm_pulsed_excitation(tau=9000, area=4*np.pi, detuning=3, small_detuning=1.5)
 
-def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, filename=None, plot=True, factor=1.0, rect_modul=False, t_0=None, rect_modul_rf=False):
+def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3, phase=0, filename=None, plot=True, factor=1.0, fortran=False, rect_modul=False, t_0=None, rect_modul_rf=False, omega_mod=None):
     """
     excites a two level system using a frequency modulalted rectangle shape pulse.
     see fm_pulsed_excitation() above for more information.  
@@ -244,23 +244,42 @@ def fm_rect_pulse(tau=10000, dt=4, area=7*np.pi, detuning=-10, small_detuning=3,
     # plt.show() 
     p.set_frequency(freq)
     x0 = np.array([0,0],dtype=complex)
-    _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
-    detunings = np.array([freq(t_) for t_ in t])*HBAR
+    f = 0
+    if fortran:
+        if omega_mod is None:
+            omega_mod = rf(0)
+        t, f, polars = tls_commons.tls_fm_rectangular(tau, dt, det1=detuning, det2=small_detuning, amplitude=(area/tau), omega_mod=omega_mod, in_state=0, in_polar=0j)
+        # n_steps = len(t)
+        # e_length = 2*n_steps-1
+        # t_new = np.linspace(t0, t1, e_length)
+        # dt_new = np.abs(t_new[0]-t_new[1])
+        # e0 = np.array([p.get_envelope(v)*np.exp(-1j*freq(v)*v) for v in t_new], dtype=complex)
+        # plt.plot(np.real(e0))
+        # plt.show()
+        # _,_p,f, polars = tls_commons.tls_arbitrary_pulse(t0, e0, n_steps, dt=dt)
+        x = np.empty([len(f),2],dtype=complex)
+        x[:,0] = f
+        x[:,1] = polars
+
+    else:
+        _, x = tls_commons.runge_kutta(t0, x0, t1, dt, tls_commons.bloch_eq, p, 0)
+        f = np.real(x[:,0])
     angles = np.array([360/(2*np.pi)*p.get_rotation_axis_angle(t_) for t_ in t])
+    detunings = np.array([freq(t_) for t_ in t])*HBAR
     if plot:
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
         ax2.plot(t,detunings, 'b-')
         ax1.plot(t,[1 for i in t], 'g-')
-        ax1.plot(t,x[:,0].real, 'r-')
+        ax1.plot(t,f, 'r-')
         ax3.plot(t, angles)
         ax1.set_ylim(-0.1,1.1)
-        ax2.set_ylim(detuning - small_detuning - 2, detuning + small_detuning + 2)
+        ax2.set_ylim(detuning - small_detuning*1.2, detuning + small_detuning*1.2)
         ax1.set_ylabel("occupation")
         ax2.set_ylabel("detuning")
         ax3.set_ylabel("rot. ax. angle")
         plt.show()
     if filename is not None:
-        helper.export_csv(filename, t, x[:,0].real, detunings, angles, np.array([p.get_envelope(v) for v in t])/p.get_envelope(0))
+        helper.export_csv(filename, t, f, detunings, angles, np.array([p.get_envelope(v) for v in t])/p.get_envelope(0))
     return t, x, p
 
 # detuned_rect_pulse(tau=20000, area=10*np.pi, detuning=-7, small_detuning=2)

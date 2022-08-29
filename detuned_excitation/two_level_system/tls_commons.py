@@ -103,6 +103,13 @@ def two_level_fm(tau=10000,dt=4,detuning=-10,detuning_small=3,area=7*np.pi,fm_fr
     f,p,states,polars = tls.tls_fm(t0,dt,n_steps,in_state,in_polar,tau,detuning,detuning_small,area,fm_freq)
     return f, p, states, polars
 
+def tls_fm_rectangular(tau, dt, det1, det2, amplitude, omega_mod, in_state=0, in_polar=0j):
+    t_0 = -tau
+    t_end = tau
+    t = np.arange(t_0, t_end, dt)
+    n_steps = int(abs(t_end - t_0)/dt)
+    states, polars = tls.tls_fm_rectangular(t_0,tau,dt,n_steps,amplitude,det1,det2,omega_mod,in_state,in_polar)
+    return t, states, polars
 
 def six_levels_two_color(t_0, t_end, dt=10, tau1=3500, tau2=3500, energy_1=1.0, energy_2=1.0, e01=1*np.pi, e02=0*np.pi, t02=0.0, polar_m1=1.0, polar_m2=1.0, bx=0, bz=0, state_param=np.array([1, 0, 0, 0, 0, 0]), polarizations_param=np.zeros([15], dtype=complex), delta_b=-0.25, d0=0.25, d1=0.12, d2=0.05, delta_e=0.0):
     """

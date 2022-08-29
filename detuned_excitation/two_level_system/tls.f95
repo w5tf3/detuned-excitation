@@ -438,6 +438,87 @@ subroutine tls_twopulse_cw_second(t_0, dt, n_steps, in_state, in_polar, out_stat
     out_polar=p;
 end subroutine tls_twopulse_cw_second
 
+subroutine tls_fm_rectangular(t_0, tau, dt, n_steps, amplitude, det1, det2, omega_mod, in_state, in_polar, out_states, out_polars)
+    !
+    !
+    !
+    !
+    implicit none
+    integer,intent(in) :: n_steps
+    real*8,intent(in) :: tau, dt, amplitude, det1, det2, omega_mod, in_state
+    complex*16,intent(in) :: in_polar
+    real*8,intent(out) :: out_states(n_steps)
+    complex*16,intent(out) :: out_polars(n_steps)
+    real*8 :: pi, HBAR, g, t, t_0
+    complex*16 :: ii, p, pulse
+    real*8 :: delta, k1r, k2r, k3r, k4r, factor
+    complex*16 :: k1i, k2i, k3i, k4i
+    integer :: i=0
+
+    ii = (0.0,1.0)
+    pi = 4.0d0*atan(1.0d0)
+    HBAR = 6.582119514E02  ! meV fs
+    ! starting parameters
+    g=in_state;
+    p=in_polar; 
+
+    ! pulse parameters
+    !w_start1 = e_energy1 / HBAR
+    !w_start2 = e_energy2 / HBAR
+    do i = 0, n_steps - 2
+
+        ! take rk4 step
+        t = t_0 + i * dt
+        ! pulse stuff
+        pulse = 0
+        if ( abs(t) < tau/2.0 ) then
+            pulse = amplitude
+        end if
+        factor = 1.0
+        if ( sin(omega_mod*t) < 0 ) then
+            factor = -1.0
+        end if
+        delta = (det1 + det2 * factor)/HBAR
+
+        call tls_eq(g, p, pulse, delta, k1r, k1i)
+
+        ! t -> t+h/2 
+        t = t_0 + i*dt + 0.5*dt
+        ! pulse stuff
+        pulse = 0
+        if ( abs(t) < tau/2.0 ) then
+            pulse = amplitude
+        end if
+        factor = 1.0
+        if ( sin(omega_mod*t) < 0 ) then
+            factor = -1.0
+        end if
+        delta = (det1 + det2 * factor)/HBAR
+
+        call tls_eq(g+k1r*0.5*dt, p+k1i*0.5*dt, pulse, delta, k2r, k2i)
+        call tls_eq(g+k2r*0.5*dt, p+k2i*0.5*dt, pulse, delta, k3r, k3i)
+        ! t -> t+h
+        t = t_0 + i*dt + dt
+        ! pulse stuff
+        pulse = 0
+        if ( abs(t) < tau/2.0 ) then
+            pulse = amplitude
+        end if
+        factor = 1.0
+        if ( sin(omega_mod*t) < 0 ) then
+            factor = -1.0
+        end if
+        delta = (det1 + det2 * factor)/HBAR
+
+        call tls_eq(g+k3r*dt, p+k3i*dt, pulse, delta, k4r, k4i)
+        ! update parameters
+        g=g + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
+        p=p + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
+        out_states(i+2)=g;
+        out_polars(i+2)=p;
+    end do
+end subroutine tls_fm_rectangular
+
 subroutine tls_arbitrary_field(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, e0, delta_e)
 ! ===============================
 ! solves two level system for arbitrary electric field given as array

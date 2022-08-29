@@ -158,12 +158,19 @@ class RectanglePulse(Pulse):
         # plt.plot(t,y3,'y.')
         plt.show()
 
+class RectanglePulseAmplitude(RectanglePulse):
+    """
+    same as RectanglePulse, but the amplitude of the rectangle is directly set
+    """
+
+    def get_envelope_f(self):
+        return lambda t: self.e0 if np.abs(t-self.t0) < self.tau/2 else 0
 
 class ChirpedPulse(Pulse):
     def __init__(self, tau_0, e_start, alpha=0, t0=0, e0=1*np.pi, polar_1=1):
         self.tau_0 = tau_0
         self.alpha = alpha
-        super().__init__(np.sqrt(alpha**2 / tau_0**2 + tau_0**2), e_start, w_gain=alpha/(alpha**2 + tau_0**4), t0=t0, e0=e0, polar_1=polar_1)
+        super().__init__(tau=np.sqrt(alpha**2 / tau_0**2 + tau_0**2), e_start=e_start, w_gain=alpha/(alpha**2 + tau_0**4), t0=t0, e0=e0, polar_1=polar_1)
     
     def get_parameters(self):
         """
