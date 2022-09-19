@@ -2,17 +2,17 @@ from setuptools import find_packages
 from numpy.distutils.core import setup, Extension
 
 
-tls_fortran = Extension(name='two_level_system/tls.f90',
+tls_fortran = Extension(name='detuned_excitation/two_level_system/tls.tls',
                  sources=['detuned_excitation/two_level_system/tls_.f90'],
                  f2py_options=['--quiet'],
                 )
 
-sixls_fortran = Extension(name='two_level_system/sixls.f90',
+sixls_fortran = Extension(name='detuned_excitation/two_level_system/sixls.sixls',
                  sources=['detuned_excitation/two_level_system/sixls_.f90'],
                  f2py_options=['--quiet'],
                 )
 
-biexciton_fortran = Extension(name='two_level_system/biexciton.f90',
+biexciton_fortran = Extension(name='detuned_excitation/two_level_system/biexciton.biexciton',
                  sources=['detuned_excitation/two_level_system/biexciton_.f90'],
                  f2py_options=['--quiet'],
                 )

@@ -1,8 +1,8 @@
 from os import stat
 import numpy as np
-from detuned_excitation.two_level_system.tls import f90 as tls
-from detuned_excitation.two_level_system.sixls import f90 as sixls
-from detuned_excitation.two_level_system.biexciton import f90 as biexciton
+from detuned_excitation.two_level_system.tls import tls
+from detuned_excitation.two_level_system.sixls import sixls
+from detuned_excitation.two_level_system.biexciton import biexciton
 # print(tls.__doc__)
 
 
