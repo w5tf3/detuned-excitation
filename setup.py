@@ -20,8 +20,8 @@ biexciton_fortran = Extension(name='two_level_system/biexciton.f90',
 setup(
       name='detuned_excitation',
       version='0.0.1',
-      package_dir={"": "detuned_excitation"},
-      packages=find_packages(where="detuned_excitation"),
+      # package_dir={"": "detuned_excitation"},
+      # packages=find_packages(where="detuned_excitation"),
       ext_modules=[tls_fortran,sixls_fortran,biexciton_fortran],
       install_requires=[
                         'numpy',
