@@ -19,7 +19,7 @@ def check_pulse(tau,area=1,dt=4,center=4):
     t0 = -4*tau
     t1 = 4*tau
     t = np.arange(t0,t1,dt)
-    fft_freqs = -2*np.pi * HBAR * np.fft.fftfreq(len(t),d=dt)
+    fft_freqs = -2*np.pi * HBAR * np.fft.fftfreq(len(t),d=dt)  # note that these have a negative sign
     sigma = HBAR/tau
     envelope = area/np.sqrt(2*np.pi*tau**2) * np.exp(-0.5*(t/tau)**2)*np.exp(-1j*center/HBAR*t)
     fft_freqs = np.fft.fftshift(fft_freqs)
@@ -76,7 +76,7 @@ def cut_super(dt=5, tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, 
 # rf_max = np.sqrt(max_r**2 + (detuning1/HBAR)**2)
 # print("detuning2: {:.5f}".format(detuning1 - HBAR*rf_max))
 
-def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None, fwhm=20, detuning1=-5, detuning2=-10, cut_width1=2, cut_width2=2, factor1=1.0, factor2=1.0, dt=4, do_plot=False, mode="gauss", background=None, chirp=0,
+def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None, fwhm=20, detuning1=-5, detuning2=-10, cut_width1=2, cut_width2=2, factor1=1.0, factor2=1.0, dt=4, do_plot=False, mode="gauss", background=None, chirp=0, chirp3=0,
                save_spectrum=False, save_dynamics=False):
     """
     ### Prameters:
@@ -161,7 +161,7 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
     elif mode == "use_all":
         mask = np.ones(len(fft_freqs))
     elif mode == "chirp":
-        mask = np.ones(len(fft_freqs))* np.exp(0.5j*(chirp/HBAR**2)*(fft_freqs-center)**2)
+        mask = np.ones(len(fft_freqs))* np.exp(0.5j*(chirp/HBAR**2)*(fft_freqs-center)**2) * np.exp(1j/6.0*(chirp3/HBAR**3)*(fft_freqs-center)**3)
     else:
         # just use sharp rectangular cuts
         mask1 = np.zeros(len(fft_freqs))
@@ -228,8 +228,8 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
 
 # t2, pulse_t2 = cut_pulses(dt=10,area=5*np.pi, do_plot=True, gauss=False, center=0, broad_tau=110, detuning1=0, cut_width1=50,factor2=0,chirp=0.3e6)
 # t2, pulse_t2 = cut_pulses(dt=10,area=1*np.pi, do_plot=True, gauss=False, center=-8.4, broad_tau=100, detuning1=0, cut_width1=50,factor2=0,chirp=0)
-# t2, pulse_t2 = cut_pulses(dt=10, mode="chirp", area=5*np.pi, do_plot=True, center=0, broad_tau=110, detuning1=0, cut_width1=1.05,factor2=0,chirp=0.3e6)
-
+# t2, pulse_t2 = cut_pulses(dt=10, mode="chirp", area=5*np.pi, do_plot=True, center=0, broad_tau=110, detuning1=0, cut_width1=1.05,factor2=0,chirp=0.3e6, chirp3=0.00e9)
+t2, pulse_t2 = cut_pulses(t0=-70000, t1=70000, dt=10, mode="chirp", area=5*np.pi, do_plot=True, center=0, broad_tau=2700, detuning1=0, cut_width1=1.05,factor2=0,chirp=0e6, chirp3=30e9)
 # # plt.plot(t, pulse_t)
 # plt.plot(t2, np.abs(pulse_t2))
 # plt.show()
