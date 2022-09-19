@@ -148,3 +148,8 @@ data.txt
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
+
+# folders for compiled f2py code
+sixls/
+tls/
+biexciton/
