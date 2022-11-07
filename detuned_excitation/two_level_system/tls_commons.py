@@ -144,7 +144,7 @@ def biex_rect(tau, det1, det2, area1, area2, dt=5, delta_b=8, delta_e=0, in_stat
     t = np.linspace(t0,t1,len(states))
     return t, f, p, states, polars
 
-def tls_arbitrary_pulse(t0, e0, n_steps, dt=3, delta_e=0, in_state=0, in_polar=0j, strict=True):
+def tls_arbitrary_pulse(t0, e0, n_steps, dt=3, delta_e=0, in_state=0, in_polar=0j, strict=True, gamma_x=0):
     """
     ### Parameters 
     e0: array with electric field, complex. has to be of length 2*len(out_size)-1, where out_size is the (desired) size of the result array
@@ -156,7 +156,7 @@ def tls_arbitrary_pulse(t0, e0, n_steps, dt=3, delta_e=0, in_state=0, in_polar=0
         print("is:{}, should:{}".format(len(e0),2*n_steps-1))
         exit(1)
     e0 = e0[:2*n_steps-1]
-    f,p,states,polars = tls.tls_arbitrary_field(t0,dt,in_state,in_polar,e0,delta_e,n_steps)
+    f,p,states,polars = tls.tls_arbitrary_field(t0,dt,in_state,in_polar,e0,delta_e,gamma_x,n_steps)
     return f, p, states, polars
 
 def biex_arbitrary_pulse(e0, n_steps, dt=3, delta_e=0, delta_b=4, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0], dtype=complex), strict=True):

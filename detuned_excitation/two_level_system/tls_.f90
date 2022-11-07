@@ -519,7 +519,8 @@ subroutine tls_fm_rectangular(t_0, tau, dt, n_steps, amplitude, det1, det2, omeg
     end do
 end subroutine tls_fm_rectangular
 
-subroutine tls_arbitrary_field(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars, e0, delta_e)
+subroutine tls_arbitrary_field(t_0, dt, n_steps, in_state, in_polar, out_state, out_polar, out_states, out_polars,&
+           e0, delta_e, gamma_x)
 ! ===============================
 ! solves two level system for arbitrary electric field given as array
 ! first in array has to be E-field for t0, then t0+dt/2, then t0+dt
@@ -527,7 +528,7 @@ subroutine tls_arbitrary_field(t_0, dt, n_steps, in_state, in_polar, out_state, 
 ! ===============================
     implicit none
     integer :: i=0
-    Real*8,intent(in) :: t_0, dt, delta_e
+    Real*8,intent(in) :: t_0, dt, delta_e, gamma_x
     integer,intent(in) :: n_steps
     Real*8,intent(in):: in_state
     Complex*16,intent(in):: in_polar, e0(2*n_steps-1)
@@ -560,19 +561,19 @@ subroutine tls_arbitrary_field(t_0, dt, n_steps, in_state, in_polar, out_state, 
         t = t_0 + i * dt
         e_field = e0(2*i+1)  ! careful: loop starts at i=0, but array indexing starts at 1
         !e_field = e01 * exp(-0.5 * (t/tau1)**2.) / sqrt(2.*pi*tau1 * tau1)
-        call tls_eq(g, p, e_field, delta, k1r, k1i)
+        call tls_eq_lindblad(g, p, e_field, delta, k1r, k1i, gamma_x)
         ! t -> t+h/2 
         t = t_0 + i * dt + 0.5*dt
         e_field = e0(2*i+2)
         !e_field = e01 * exp(-0.5 * (t/tau1)**2.) / sqrt(2.*pi*tau1 * tau1)
         !omm = e0 * exp(-0.5 * (t/tau)**2.)/ sqrt(2.*pi*tau * tau_0)
-        call tls_eq(g+k1r*0.5*dt, p+k1i*0.5*dt, e_field, delta, k2r, k2i)
-        call tls_eq(g+k2r*0.5*dt, p+k2i*0.5*dt, e_field, delta, k3r, k3i)
+        call tls_eq_lindblad(g+k1r*0.5*dt, p+k1i*0.5*dt, e_field, delta, k2r, k2i, gamma_x)
+        call tls_eq_lindblad(g+k2r*0.5*dt, p+k2i*0.5*dt, e_field, delta, k3r, k3i, gamma_x)
         ! t -> t+h
         t = t_0 + i * dt + dt
         e_field = e0(2*i+3)
         !e_field = e01 * exp(-0.5 * (t/tau1)**2.) / sqrt(2.*pi*tau1 * tau1)
-        call tls_eq(g+k3r*dt, p+k3i*dt, e_field, delta, k4r, k4i)
+        call tls_eq_lindblad(g+k3r*dt, p+k3i*dt, e_field, delta, k4r, k4i, gamma_x)
         ! update parameters
         g=g + (1.0/6.0)*dt*(k1r + 2.0*k2r + 2.0*k3r + k4r);
         p=p + (1.0/6.0)*dt*(k1i + 2.0*k2i + 2.0*k3i + k4i);
@@ -595,3 +596,16 @@ subroutine tls_eq(in_state, in_polar, e_f, delta, out_state, out_polar)
     ! delta = phidot - omega_0, where omega_0 = system frequency
     out_polar = ii*delta*in_polar + ii*0.5*e_f*(1-2*in_state)
 end subroutine tls_eq
+
+subroutine tls_eq_lindblad(in_state, in_polar, e_f, delta, out_state, out_polar, gamma_x)
+    implicit none
+    Real*8,intent(in) :: in_state, delta, gamma_x
+    Complex*16,intent(in) :: in_polar, e_f
+    Real*8,intent(out) :: out_state
+    Complex*16,intent(out) :: out_polar
+    Complex*16 :: ii = (0.0,1.0)
+
+    out_state = AIMAG(conjg(e_f)*in_polar) - gamma_x*in_state
+    ! delta = phidot - omega_0, where omega_0 = system frequency
+    out_polar = (ii*delta - 0.5*gamma_x)*in_polar + ii*0.5*e_f*(1-2*in_state)
+end subroutine tls_eq_lindblad

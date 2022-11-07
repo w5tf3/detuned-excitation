@@ -125,6 +125,22 @@ class SmoothRectangle(Pulse):
     def get_envelope(self, t):
         return self.e0/( (1+np.exp(-self.alpha*(t+self.tau/2 - self.t0))) * (1+np.exp(-self.alpha*(-t+self.tau/2 + self.t0))) )
 
+class SmoothCW(Pulse):
+    """
+    CW pulse that is switched on with a sigmoid shape.
+
+    """
+    def __init__(self, e_start, tau=1,  w_gain=0, t0=0, e0=1, phase=0, alpha_on=100, polar_1=1):
+        self.alpha = 1/alpha_on  # switch on time in fs
+        super().__init__(tau, e_start, w_gain=w_gain, t0=t0, e0=e0, phase=phase, polar_1=polar_1)
+
+    def get_envelope_f(self):
+        return lambda t: self.e0/( (1+np.exp(-self.alpha*(t - self.t0))))# * (1+np.exp(-self.alpha*(-t+self.tau/2 + self.t0))) )
+
+    def get_envelope(self, t):
+        return self.e0/( (1+np.exp(-self.alpha*(t - self.t0))))# * (1+np.exp(-self.alpha*(-t+self.tau/2 + self.t0))) )
+
+
 class RectanglePulse(Pulse):
     """
     Pulse with rectangular pulse shape, with amplitude area/tau from -tau/2 to tau/2, else 0.
