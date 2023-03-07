@@ -562,7 +562,7 @@ def test_stability_t0(t0_arr, dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area
     plt.show()
     return endvals
 
-def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5,detuning2=None, t02=0, dt=1):
+def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5,detuning2=None, t02=0, dt=1, phase2=0):
     """
     test the stability of an excitation with two detuned pulses with respect to
     certain parameters
@@ -572,14 +572,34 @@ def test_stability_area(ar1, ar2, tau1, tau2, detuning=-5,detuning2=None, t02=0,
     endvals = np.empty([len(y_ax), len(x_ax)])
     for i in tqdm.trange(len(y_ax)):
        for j in range(len(x_ax)):
-           endvals[i,j],_,_,_,_ = am_twocolor_fortran(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=x_ax[j],detuning=detuning, detuning2=detuning2)
+           endvals[i,j],_,_,_,_ = am_twocolor_fortran(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=x_ax[j],detuning=detuning, detuning2=detuning2, phase=phase2)
     
     ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
     print("{}, area1:{:.4f}, area2:{:.4f}, final occ.:{:.4f}".format(ind,x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi,endvals[ind[0],ind[1]]))
+    plt.title("tau1:{:.1f}ps,tau2:{:.1f}ps,det1:{:.1f}meV,det2:{:.1f}meV,phase2:{:.1f}pi".format(tau1/1000,tau2/1000,detuning,detuning2,phase2/np.pi))
     plt.xlabel("area1/pi")
     plt.ylabel("area2/pi")
     plt.pcolormesh(x_ax/np.pi, y_ax/np.pi, endvals, shading='auto')
     plt.plot(x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi, 'r.')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax, endvals
+
+def test_phase(areas, phases, tau1, tau2, detuning=-5,detuning2=5, t02=0, dt=1):
+    x_ax = phases
+    y_ax = areas
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           endvals[i,j],_,_,_,_ = am_twocolor_fortran(t02=t02, dt=dt, tau2=tau2, tau1=tau1, area2=y_ax[i], area1=y_ax[i], detuning=detuning, detuning2=detuning2, phase=x_ax[j])
+    
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    # print("{}, area1:{:.4f}, area2:{:.4f}, final occ.:{:.4f}".format(ind,x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi,endvals[ind[0],ind[1]]))
+    plt.title("tau1:{:.1f}ps,tau2:{:.1f}ps,det1:{:.2f}meV,det2:{:.2f}meV".format(tau1/1000,tau2/1000,detuning,detuning2))
+    plt.xlabel("phase/pi")
+    plt.ylabel("area/pi")
+    plt.pcolormesh(x_ax/np.pi, y_ax/np.pi, endvals, shading='auto')
+    # plt.plot(x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi, 'r.')
     plt.colorbar()
     plt.show()
     return x_ax, y_ax, endvals
@@ -766,9 +786,10 @@ def detuning_area(det2s, area2s, det1, tau1, tau2, area1, t02=0, dt=1):
     print("{}, det2:{:.4f}, area2:{:.4f}, endval:{:.4f}".format(ind,max_x,max_y/np.pi,endvals[ind[0],ind[1]]))
     fig, ax = plt.subplots()
     ax.set_xlabel("detuning2")
-    ax.set_ylabel("area2/pi")
-    pcm = ax.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
-    ax.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
+    ax.set_ylabel("area2/area1")
+    plt.title("det1: {} meV, area1: {:.1f} pi".format(det1,area1/np.pi))
+    pcm = ax.pcolormesh(x_ax, y_ax/area1, endvals, shading='auto')
+    ax.plot(x_ax[ind[1]],y_ax[ind[0]]/area1, 'r.')
     #det2 = get_detuning2(tau1, area1, det1)
     #plt.scatter([det2 for _ in range(51)], [v for v in range(51)])
     #plt.scatter([det2-det1 for _ in range(51)], [v for v in range(51)])
@@ -792,14 +813,14 @@ def get_onclick(dt, tau1, tau2, area1, det1, t02):
         if event.dblclick:
             detuning2 = event.xdata
             # because T2**2 is plotted above
-            area2 = event.ydata*np.pi
+            area2 = event.ydata*area1
             fig2,ax2 = plt.subplots()
             s, states, t, polars, energy_pulse2 = am_twocolor_fortran(dt=dt, detuning=det1, tau1=tau1, tau2=tau2, area1=area1, area2=area2, detuning2=detuning2, t02=t02)
-            plt.plot(t,states)
+            plt.plot(t*1e-3,states)
             ma = moving_average(states,n=int(1000/dt))
-            plt.plot([t[0]+dt*i for i in range(len(ma))],ma)
+            plt.plot(np.array([t[0]+dt*i for i in range(len(ma))])*1e-3,ma)
             print("x:{:.4f}, y:{:.4f}, final:{:.4f}".format(detuning2,area2/np.pi,s))
-            ax2.set_xlabel("time (fs)")
+            ax2.set_xlabel("time (ps)")
             ax2.set_ylabel("occupation")
             plt.show()
             

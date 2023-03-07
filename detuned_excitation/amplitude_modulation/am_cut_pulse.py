@@ -77,7 +77,7 @@ def cut_super(dt=5, tau1=2400, tau2=3040, area1=22.65*np.pi, area2=19.29*np.pi, 
 # print("detuning2: {:.5f}".format(detuning1 - HBAR*rf_max))
 
 def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None, fwhm=20, detuning1=-5, detuning2=-10, cut_width1=2, cut_width2=2, factor1=1.0, factor2=1.0, dt=4, do_plot=False, mode="gauss", background=None, chirp=0, chirp3=0,
-               save_spectrum=False, save_dynamics=False):
+               save_spectrum=False, save_dynamics=False, phase=0, plot_lim=(-50,50)):
     """
     ### Prameters:
     area: 'area' of the whole pulse
@@ -114,7 +114,7 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
     # see also: https://numpy.org/doc/stable/reference/routines.fft.html#module-numpy.fft
 
     
-    spectrum = 1/dt * area / (np.sqrt(2*np.pi)*sigma) * np.exp(-(fft_freqs-center)**2/(2*sigma**2))
+    # spectrum = 1/dt * area / (np.sqrt(2*np.pi)*sigma) * np.exp(-(fft_freqs-center)**2/(2*sigma**2))
     spectrum = 1/dt * area * np.exp(-(fft_freqs-center)**2/(2*sigma**2))
     
     if broad_tau is not None:
@@ -155,11 +155,22 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
                         mask[i] = background
     elif mode == "hole":
         mask1 = np.ones(len(fft_freqs))
-        mask2 = np.zeros_like(mask1)
+        mask2 = np.ones_like(mask1, dtype=complex)
+        for _i in range(len(fft_freqs)):
+            if fft_freqs[_i] > 0:
+                mask2[_i] = mask2[_i]*np.exp(-1j*phase)
         mask1 = 1 - np.exp(-np.log(2)*(fft_freqs-detuning1)**2/(cut_width1)**2)
-        mask = (mask1 + mask2) * np.exp(0.5j*(chirp/HBAR**2)*(fft_freqs-center)**2)
+        mask = (mask1 * mask2) * np.exp(0.5j*(chirp/HBAR**2)*(fft_freqs-center)**2)
+    elif mode == "hole_sigmoid":
+        alpha = 30
+        mask1 = 0.5*(1+np.tanh(-0.5*alpha*(fft_freqs-(detuning1+cut_width1/2))))*0.5*(1+np.tanh(0.5*alpha*(fft_freqs-(detuning1-cut_width1/2)))) #1/( (1 + np.exp(-alpha*(fft_freqs-(detuning1+cut_width1/2))) ) )#* (1 + np.exp(-alpha*(-fft_freqs + (detuning1-cut_width1/2)) )))
+        mask2 = np.ones_like(mask1, dtype=complex)
+        for _i in range(len(fft_freqs)):
+            if fft_freqs[_i] > 0:
+                mask2[_i] = mask2[_i]*np.exp(-1j*phase)
+        mask = mask2*(1 - mask1)* np.exp(0.5j*(chirp/HBAR**2)*(fft_freqs-center)**2)
     elif mode == "use_all":
-        mask = np.ones(len(fft_freqs))
+        mask = np.ones(len(fft_freqs))*np.exp(-1j*phase)
     elif mode == "chirp":
         mask = np.ones(len(fft_freqs))* np.exp(0.5j*(chirp/HBAR**2)*(fft_freqs-center)**2) * np.exp(1j/6.0*(chirp3/HBAR**3)*(fft_freqs-center)**3)
     else:
@@ -182,18 +193,18 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
 
     if do_plot:
         fig,axes = plt.subplots(3,2,constrained_layout=True)
-        axes[0,0].plot(np.fft.fftshift(fft_freqs),np.fft.fftshift(spectrum**2),label="in spectrum")
+        axes[0,0].plot(np.fft.fftshift(fft_freqs),np.fft.fftshift(np.abs(spectrum)**2),label="in spectrum")
         axes[0,0].set_ylabel("intensity")
-        axes[0,0].set_xlim((-50,50))
+        axes[0,0].set_xlim(plot_lim)
         axes[0,0].legend()
 
-        axes[1,0].plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(mask)),label="filter mask")
-        axes[1,0].set_xlim((-50,50))
+        axes[1,0].plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift(mask)),label="filter mask,\n phase:{:.2f}pi".format(phase/np.pi))
+        axes[1,0].set_xlim(plot_lim)
         axes[1,0].set_ylabel("transmission")
         axes[1,0].legend()
 
         axes[2,0].set_xlabel("Energy (meV)")
-        axes[2,0].set_xlim((-50,50))
+        axes[2,0].set_xlim(plot_lim)
         axes[2,0].set_ylabel("intensity")
         axes[2,0].plot(np.fft.fftshift(fft_freqs),np.abs(np.fft.fftshift((mask*spectrum)**2)),label="out spectrum")
         axes[2,0].plot(np.fft.fftshift(fft_freqs),np.fft.fftshift(np.abs(spectrum)**2),'r-',label="in spectrum")
@@ -212,7 +223,7 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
         # and RK4 then calculates the state for [0, dt, 2*dt, ...]
         _,_,states,_ = tls_commons.tls_arbitrary_pulse(t[0], np.fft.ifftshift(pulses_t), n_steps, dt=2*dt, strict=False)
         t_ = np.linspace(t[0],t[-1],len(states))
-        axes[2,1].plot(t_,states, label="time dynamics")
+        axes[2,1].plot(t_/1000,states, label="time dynamics")
         axes[2,1].legend()
         axes[2,1].set_xlabel("time (ps)")
         if save_dynamics:
@@ -229,6 +240,15 @@ def cut_pulses(t0=-22000, t1=22000, area=120*np.pi, center=-7.5, broad_tau=None,
 # t2, pulse_t2 = cut_pulses(dt=10,area=5*np.pi, do_plot=True, gauss=False, center=0, broad_tau=110, detuning1=0, cut_width1=50,factor2=0,chirp=0.3e6)
 # t2, pulse_t2 = cut_pulses(dt=10,area=1*np.pi, do_plot=True, gauss=False, center=-8.4, broad_tau=100, detuning1=0, cut_width1=50,factor2=0,chirp=0)
 # t2, pulse_t2 = cut_pulses(dt=10, mode="chirp", area=5*np.pi, do_plot=True, center=0, broad_tau=110, detuning1=0, cut_width1=1.05,factor2=0,chirp=0.3e6, chirp3=0.00e9)
+# t2, pulse_t2 = cut_pulses(dt=10, mode="hole", area=5*np.pi, do_plot=True, center=0, broad_tau=110, detuning1=0, cut_width1=1.05,factor2=0,chirp=0.3e6, chirp3=0.00e9,phase=np.pi)
+
+# t2, pulse_t2 = cut_pulses(t0=-40e3,t1=40e3,dt=10, mode="hole", area=4*np.pi, do_plot=True,plot_lim=(-2,2), center=0, broad_tau=1800, detuning1=0, cut_width1=0.3,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=0)
+# t2, pulse_t2 = cut_pulses(t0=-40e3,t1=40e3,dt=10, mode="hole", area=4*np.pi, do_plot=True,plot_lim=(-2,2), center=0, broad_tau=1800, detuning1=0, cut_width1=0.3,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=np.pi/2)
+# t2, pulse_t2 = cut_pulses(t0=-40e3,t1=40e3,dt=10, mode="hole", area=4*np.pi, do_plot=True,plot_lim=(-2,2), center=0, broad_tau=1800, detuning1=0, cut_width1=0.3,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=np.pi)
+# t2, pulse_t2 = cut_pulses(t0=-40e3,t1=40e3,dt=10, mode="hole", area=4*np.pi, do_plot=True,plot_lim=(-2,2), center=0, broad_tau=1800, detuning1=0, cut_width1=0.3,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=3*np.pi/2)
+
+t2, pulse_t2 = cut_pulses(dt=10, mode="hole", area=10*np.pi, do_plot=True,plot_lim=(-2,2), center=1, broad_tau=2000, detuning1=0, cut_width1=0.5,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=np.pi/2)
+t2, pulse_t2 = cut_pulses(dt=10, mode="hole", area=10*np.pi, do_plot=True,plot_lim=(-2,2), center=0, broad_tau=2000, detuning1=0, cut_width1=0.5,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=np.pi)
 t2, pulse_t2 = cut_pulses(t0=-70000, t1=70000, dt=10, mode="chirp", area=5*np.pi, do_plot=True, center=0, broad_tau=2700, detuning1=0, cut_width1=1.05,factor2=0,chirp=0e6, chirp3=30e9)
 # # plt.plot(t, pulse_t)
 # plt.plot(t2, np.abs(pulse_t2))
@@ -267,6 +287,38 @@ t2, pulse_t2 = cut_pulses(t0=-70000, t1=70000, dt=10, mode="chirp", area=5*np.pi
 # plt.plot(t3,p3, label="p3")
 # plt.legend()
 # plt.show()
+
+def tls_cut_pulse(**argv):
+    t, _pulse = cut_pulses(**argv)
+    n_steps = int((len(t)-2)/2)
+    f,p,states,polars = tls_commons.tls_arbitrary_pulse(t[0], _pulse, n_steps, dt=2*argv["dt"], strict=False)
+    t = np.linspace(t[0],t[-1],len(states))
+    return t, states, f, _pulse
+
+# t, states, f, _pulse = tls_cut_pulse(t0=-40e3,t1=40e3,dt=10, mode="hole", area=4*np.pi, do_plot=True,plot_lim=(-2,2), center=0, broad_tau=1800, detuning1=0, cut_width1=0.3,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=0)
+# plt.plot(t,states)
+# plt.show()
+
+def test_phase(phases=np.linspace(-1,3,50)*np.pi,areas=np.linspace(0,30,50)*np.pi):
+    x_ax = phases
+    y_ax = areas
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           _,_,endvals[i,j],_ = tls_cut_pulse(t0=-40e3,t1=40e3,dt=10, mode="hole", area=y_ax[i], do_plot=False,plot_lim=(-2,2), center=0, broad_tau=1800, detuning1=0, cut_width1=0.3,factor2=0,chirp=0.0e6, chirp3=0.00e9,phase=x_ax[j])
+    
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    # print("{}, area1:{:.4f}, area2:{:.4f}, final occ.:{:.4f}".format(ind,x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi,endvals[ind[0],ind[1]]))
+    #plt.title("tau1:{:.1f}ps,tau2:{:.1f}ps,det1:{:.1f}meV,det2:{:.1f}meV".format(tau1/1000,tau2/1000,detuning,detuning2))
+    plt.xlabel("phase/pi")
+    plt.ylabel("areas/pi")
+    plt.pcolormesh(x_ax/np.pi, y_ax/np.pi, endvals, shading='auto')
+    # plt.plot(x_ax[ind[1]]/np.pi,y_ax[ind[0]]/np.pi, 'r.')
+    plt.colorbar()
+    plt.show()
+    return x_ax, y_ax, endvals
+
+# test_phase()
 
 def use_cut_pulse(dt, area=120*np.pi, center=-20, fwhm=20, detuning1=-5, detuning2=-11, cut_width1=0.8, cut_width2=0.8,factor1=1.0, factor2=0.4, mode="gauss", background=None, biexciton=False, broad_tau=None, delta_b=4, chirp=0):
     #t0 = 5*tau

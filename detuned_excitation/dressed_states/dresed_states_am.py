@@ -172,12 +172,13 @@ def twolevels_dressedstates(tau1=6200, tau2=9600, dt=10, area1=29*np.pi, area2=2
     # calculate the interaction hamiltonian belonging to the second pulse in the dressed state basis
     e_values_new = np.empty_like(e_values)
     h_interaction = np.empty([len(t),2,2],dtype=complex)
-    # for i in tqdm.trange(len(t)):
-    #     h_int = -np.array([[0,0.5*HBAR*p2.get_envelope(t[i])*np.exp(1j*(1/HBAR)*(detuning2-detuning1)*t[i])],
-    #                       [0.5*HBAR*p2.get_envelope(t[i])*np.exp(-1j*(1/HBAR)*(detuning2-detuning1)*t[i]),0]])
-    #     for j in range(2):
-    #         for k in range(2):
-    #             h_interaction[i,j,k] = np.dot(np.conjugate(np.transpose(e_vectors[i,:,j])),np.dot(h_int,e_vectors[i,:,k]))
+    for i in tqdm.trange(len(t)):
+        h_int = -np.array([[0,0.5*HBAR*p2.get_envelope(t[i])*np.exp(1j*(1/HBAR)*(detuning2-detuning1)*t[i])],
+                          [0.5*HBAR*p2.get_envelope(t[i])*np.exp(-1j*(1/HBAR)*(detuning2-detuning1)*t[i]),0]])
+        for j in range(2):
+            for k in range(2):
+                # do the basis transform 
+                h_interaction[i,j,k] = np.dot(np.conjugate(np.transpose(e_vectors[i,:,j])),np.dot(h_int,e_vectors[i,:,k]))
         # for both dressed states |+> and |->, also an energy contribution happens
     for i in range(len(t)):
         for j in range(2):
@@ -185,7 +186,7 @@ def twolevels_dressedstates(tau1=6200, tau2=9600, dt=10, area1=29*np.pi, area2=2
     for i in range(2):
         plt.plot(t*1e-3,e_values_new[:,i].real,label="E_{}".format(i))
         plt.plot(t*1e-3,e_values[:,i].real,label="old_E_{}".format(i))
-    # plt.plot(t*1e-3,np.abs((e_values_new[:,0]-e_values_new[:,1]).real),label="diff_E")
+    plt.plot(t*1e-3,np.abs((e_values_new[:,0]-e_values_new[:,1]).real),label="diff_E")
     plt.legend()
     plt.xlabel("t (ps)")
     plt.ylabel("E (meV)")
