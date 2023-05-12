@@ -240,7 +240,7 @@ subroutine biex_linear_twopulse(t_0, dt, n_steps, in_state, in_polar, out_state,
     phidot = E_x 
     ! actually phi/t. if this is time dependent (i.e. modulated frequency and using a time dependent rot. frame), move inside the loop
     phi = E_x / HBAR
-    energies(1)=E_x; energies(2)=E_y; energies(2)=E_b
+    energies(1)=E_x; energies(2)=E_y; energies(3)=E_b
     do i = 0, n_steps - 2
         ! take first rk4 step:
         t = t_0 + i * dt

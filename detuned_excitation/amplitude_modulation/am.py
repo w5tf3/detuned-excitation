@@ -570,7 +570,7 @@ def biexciton_linear_pulse2(tau1, tau2, area1, area2s, detuning, detuning2s, t02
     plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
     plt.colorbar(label="X occupation")
     plt.show()
-    return x_ax, y_ax, endvals
+    return x_ax, y_ax, endvals, x_ax[ind[1]],y_ax[ind[0]]/np.pi,endvals[ind[0],ind[1]]
 
 def test_stability_t0(t0_arr, dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi):
     endvals = np.empty([len(t0_arr)])
