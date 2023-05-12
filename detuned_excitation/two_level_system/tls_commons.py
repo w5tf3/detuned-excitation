@@ -135,6 +135,10 @@ def biex_am_fortran(t0, t_end, tau1=10000, tau2=1000, alpha=0, dt=1, det1=0, det
     f,p,states,polars = biexciton.biex_twopulse(t0,dt,n_steps,in_state,in_polar,tau1,tau2,det1,det2,area1,area2,delta_b,delta_e,t02,phase,alpha)
     return f, p, states, polars
 
+def biex_linear_fortran(t0, t_end, tau1=10, tau2=10, alpha=0, dt=1, det1=0, det2=0, area1=10*np.pi, area2=0*np.pi,t02=0, pol1x=1, pol2x=1, delta_b=4, delta_0=0, delta_e=0, phase=0, in_state=np.array([1,0,0,0]), in_polar=np.array([0,0,0,0,0,0],dtype=complex)):
+    n_steps = int(abs(t_end-t0)/dt)+1
+    f,p,states,polars = biexciton.biex_linear_twopulse(t0,dt,n_steps,in_state,in_polar,tau1,tau2,det1,det2,area1,area2,pol1x,pol2x,delta_b,delta_0,delta_e,t02,phase,alpha)
+    return f, p, states, polars
 
 def biex_rect(tau, det1, det2, area1, area2, dt=5, delta_b=8, delta_e=0, in_state=np.array([1,0,0]), in_polar=np.array([0,0,0],dtype=complex)):
     t0 = -0.6*tau

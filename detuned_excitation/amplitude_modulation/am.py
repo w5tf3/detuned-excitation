@@ -549,6 +549,29 @@ def biexciton_stability_pulse2(tau1, tau2, area1, area2s, detuning, detuning2s, 
     plt.show()
     return x_ax, y_ax, endvals
 
+def biexciton_linear_pulse2(tau1, tau2, area1, area2s, detuning, detuning2s, t02=0, dt=0.05, delta_b=4, delta_0=0, pol1x=1, pol2x=1):
+    """
+    test the stability of an excitation with two detuned pulses with respect to
+    certain parameters
+    """
+    t0 = 4*np.max([tau1,tau2])
+    x_ax = detuning2s
+    y_ax = area2s
+    endvals = np.empty([len(y_ax), len(x_ax)])
+    for i in tqdm.trange(len(y_ax)):
+       for j in range(len(x_ax)):
+           f,_,_,_ = tls_commons.biex_linear_fortran(t0=-t0, t_end=t0, tau1=tau1, tau2=tau2, area1=area1, dt=dt, area2=y_ax[i], t02=t02, det1=detuning, det2=x_ax[j], delta_b=delta_b, delta_0=delta_0, pol1x=pol1x, pol2x=pol2x)
+           endvals[i,j] = f[3]
+    ind = np.unravel_index(np.argmax(endvals, axis=None), endvals.shape)
+    print("{}, detuning2:{:.4f}, area2:{:.4f}, endval:{:.4f}".format(ind,x_ax[ind[1]],y_ax[ind[0]]/np.pi,endvals[ind[0],ind[1]]))
+    plt.xlabel("detuning2")
+    plt.ylabel("area2/pi")
+    plt.pcolormesh(x_ax, y_ax/np.pi, endvals, shading='auto')
+    plt.plot(x_ax[ind[1]],y_ax[ind[0]]/np.pi, 'r.')
+    plt.colorbar(label="X occupation")
+    plt.show()
+    return x_ax, y_ax, endvals
+
 def test_stability_t0(t0_arr, dt=1, tau1=6192, tau2=9583, area1=29.0*np.pi, area2=29.0*np.pi):
     endvals = np.empty([len(t0_arr)])
     for i in tqdm.trange(len(endvals)):
