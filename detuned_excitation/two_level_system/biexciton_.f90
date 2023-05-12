@@ -400,16 +400,16 @@ subroutine biex_linear_rf(in_state, in_polar, phidot, omx, omy, energies, out_st
     out_state(1) = real(0.5*ii*gx*conjg(omx) + 0.5*ii*gy*conjg(omy) - 0.5*ii*omx*conjg(gx) - 0.5*ii*omy*conjg(gy))
     out_polar(1) = 0.5*ii*g*omx + 0.5*ii*gb*conjg(omx) + ii*gx*(-E_X + phidot)/hbar - 0.5*ii*omx*x - 0.5*ii*omy*conjg(xy)
     out_polar(2) = 0.5*ii*g*omy + 0.5*ii*gb*conjg(omy) + ii*gy*(-E_Y + phidot)/hbar - 0.5*ii*omx*xy - 0.5*ii*omy*y
-    out_polar(3) = ii*gb*(-E_B + 2*phidot)/hbar + 0.5*ii*gx*omx - 0.5*ii*gy*omy - 0.5*ii*omx*xb - 0.5*ii*omy*yb
+    out_polar(3) = ii*gb*(-E_B + 2*phidot)/hbar + 0.5*ii*gx*omx + 0.5*ii*gy*omy - 0.5*ii*omx*xb - 0.5*ii*omy*yb
     
     out_state(2) = real(-0.5*ii*gx*conjg(omx) + 0.5*ii*omx*conjg(gx) - 0.5*ii*omx*conjg(xb) + 0.5*ii*xb*conjg(omx))
     out_polar(4) = -0.5*ii*gy*conjg(omx) - 0.5*ii*omx*conjg(yb) + 0.5*ii*omy*conjg(gx) + 0.5*ii*xb*conjg(omy) &
                    + ii*xy*(E_X - E_Y)/hbar
-    out_polar(5) = -0.5*ii*b*omx - 0.5*ii*gb*conjg(omx) + 0.5*ii*omx*x - 0.5*ii*omy*xy + ii*xb*(-E_B + E_X + phidot)/hbar
+    out_polar(5) = -0.5*ii*b*omx - 0.5*ii*gb*conjg(omx) + 0.5*ii*omx*x + 0.5*ii*omy*xy + ii*xb*(-E_B + E_X + phidot)/hbar
     
-    out_state(3) = real(-0.5*ii*gy*conjg(omy) + 0.5*ii*omy*conjg(gy) + 0.5*ii*omy*conjg(yb) + 0.5*ii*yb*conjg(omy))
-    out_polar(6) = 0.5*ii*b*omy - 0.5*ii*gb*conjg(omy) + 0.5*ii*omx*conjg(xy) - 0.5*ii*omy*y &
+    out_state(3) = real(-0.5*ii*gy*conjg(omy) + 0.5*ii*omy*conjg(gy) - 0.5*ii*omy*conjg(yb) + 0.5*ii*yb*conjg(omy))
+    out_polar(6) = -0.5*ii*b*omy - 0.5*ii*gb*conjg(omy) + 0.5*ii*omx*conjg(xy) + 0.5*ii*omy*y &
                    + ii*yb*(-E_B + E_Y + phidot)/hbar
-    
-    out_state(4) = real(0.5*ii*omx*conjg(xb) - 0.5*ii*omy*conjg(yb) - 0.5*ii*xb*conjg(omx) - 0.5*ii*yb*conjg(omy))
+
+    out_state(4) = real(0.5*ii*omx*conjg(xb) + 0.5*ii*omy*conjg(yb) - 0.5*ii*xb*conjg(omx) - 0.5*ii*yb*conjg(omy))
 end subroutine biex_linear_rf
